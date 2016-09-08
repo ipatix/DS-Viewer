@@ -1,0 +1,5 @@
+*.exe
+*.psess
+*.obj
+*.o
+packages
