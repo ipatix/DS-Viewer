@@ -2,4 +2,6 @@
 *.psess
 *.obj
 *.o
+*.log
+*.tlog
 packages
