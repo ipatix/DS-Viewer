@@ -130,7 +130,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <WarningLevel>Level3</WarningLevel>
+      <WarningLevel>Level4</WarningLevel>
       <PrecompiledHeader>NotUsing</PrecompiledHeader>
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
@@ -150,20 +150,24 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="CableReceiver.cpp" />
     <ClCompile Include="dsview.cpp" />
     <ClCompile Include="Image.cpp" />
+    <ClCompile Include="MediaFrame.cpp" />
     <ClCompile Include="MediaViewer.cpp" />
-    <ClCompile Include="Ringbuffer.cpp" />
+    <ClCompile Include="TRingbuffer.cpp" />
     <ClCompile Include="uint128_t.cpp" />
     <ClCompile Include="Xcept.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Buffer.h" />
     <ClInclude Include="CableReceiver.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="Image.h" />
+    <ClInclude Include="MediaFrame.h" />
     <ClInclude Include="MediaViewer.h" />
-    <ClInclude Include="Ringbuffer.h" />
+    <ClInclude Include="TRingbuffer.h" />
     <ClInclude Include="uint128_t.h" />
     <ClInclude Include="Util.h" />
     <ClInclude Include="Xcept.h" />

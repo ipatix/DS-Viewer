@@ -7,7 +7,7 @@
 
 #include "Image.h"
 #include "Xcept.h"
-#include "Ringbuffer.h"
+#include "TRingbuffer.h"
 
 class MediaViewer
 {
@@ -15,7 +15,7 @@ class MediaViewer
         MediaViewer(Image& _top, Image& _bottom);
         ~MediaViewer();
         bool UpdateVideo(bool blank);
-        Ringbuffer<float>& GetAudioBuffer();
+        TRingbuffer<float>& GetAudioBuffer();
     private:
         void clearTexture();
         void imageTexture();
@@ -32,5 +32,5 @@ class MediaViewer
         Image& bottom;
         
         SDL_AudioDeviceID audioDeviceID;
-        Ringbuffer<float> audiobuf;
+        TRingbuffer<float> audiobuf;
 };

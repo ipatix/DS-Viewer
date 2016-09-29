@@ -80,7 +80,7 @@ bool MediaViewer::UpdateVideo(bool blank)
 	src.h = int(top.Height()) * 2;
     src.x = 0;
     src.y = 0;
-	float scaling_factor = 1.f;
+	//float scaling_factor = 1.f;
 	dest.w = int(top.Width()) * win_h / (int(top.Height()) * 2);
 	dest.h = win_h;
     dest.x = win_w / 2 - int(dest.w / 2);
@@ -92,7 +92,7 @@ bool MediaViewer::UpdateVideo(bool blank)
 	return true;
 }
 
-Ringbuffer<float>& MediaViewer::GetAudioBuffer()
+TRingbuffer<float>& MediaViewer::GetAudioBuffer()
 {
     return audiobuf;
 }
@@ -148,6 +148,6 @@ void MediaViewer::audioCallback(void *userdata, uint8_t *stream, int len)
 {
     float *buffer = (float *)stream;
     size_t frames = len / sizeof(float) / 2;
-    Ringbuffer<float> *buf = (Ringbuffer<float> *)userdata;
+    TRingbuffer<float> *buf = (TRingbuffer<float> *)userdata;
     buf->Take(buffer, frames * 2);
 }

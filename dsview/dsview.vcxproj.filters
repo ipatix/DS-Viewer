@@ -30,13 +30,19 @@
     <ClCompile Include="MediaViewer.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="Ringbuffer.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
     <ClCompile Include="uint128_t.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="Xcept.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="MediaFrame.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="Buffer.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+    <ClCompile Include="TRingbuffer.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
   </ItemGroup>
@@ -53,9 +59,6 @@
     <ClInclude Include="MediaViewer.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="Ringbuffer.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="uint128_t.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
@@ -63,6 +66,15 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="Xcept.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="MediaFrame.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="Buffer.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="TRingbuffer.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
