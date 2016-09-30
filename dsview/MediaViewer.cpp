@@ -70,6 +70,8 @@ bool MediaViewer::UpdateVideo(bool blank)
             case SDL_KEYDOWN:
                 if (sev.key.state == SDL_PRESSED && sev.key.keysym.sym == SDLK_f)
                     toggleFullscreen();
+                else if (sev.key.state == SDL_PRESSED && sev.key.keysym.sym == SDLK_q)
+                    return false;
                 break;
         }
     }
