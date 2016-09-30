@@ -25,35 +25,35 @@ void BlockToCol(Color& tl, Color& bl, Color& tr, Color& br, uint128_t data)
     static const uint8_t color_mask = 0b111111; // 6 bit color
     uint8_t r, g, b;
     // top left
-    r = (uint8_t(data) & color_mask) << 2;
+    r = (uint8_t(data) & color_mask << 2);
     data >>= 6;
-    g = (uint8_t(data) & color_mask) << 2;
+    g = (uint8_t(data) & color_mask << 2);
     data >>= 6;
-    b = (uint8_t(data) & color_mask) << 2;
+    b = (uint8_t(data) & color_mask << 2);
     data >>= 6;
     tl = Color(r, g, b);
     // bot left
-    r = (uint8_t(data) & color_mask) << 2;
+    r = (uint8_t(data) & color_mask << 2);
     data >>= 6;
-    g = (uint8_t(data) & color_mask) << 2;
+    g = (uint8_t(data) & color_mask << 2);
     data >>= 6;
-    b = (uint8_t(data) & color_mask) << 2;
+    b = (uint8_t(data) & color_mask << 2);
     data >>= 6;
     bl = Color(r, g, b);
     // top right
-    r = (uint8_t(data) & color_mask) << 2;
+    r = (uint8_t(data) & color_mask << 2);
     data >>= 6;
-    g = (uint8_t(data) & color_mask) << 2;
+    g = (uint8_t(data) & color_mask << 2);
     data >>= 6;
-    b = (uint8_t(data) & color_mask) << 2;
+    b = (uint8_t(data) & color_mask << 2);
     data >>= 6;
     tr = Color(r, g, b);
     // bot right
-    r = (uint8_t(data) & color_mask) << 2;
+    r = (uint8_t(data) & color_mask << 2);
     data >>= 6;
-    g = (uint8_t(data) & color_mask) << 2;
+    g = (uint8_t(data) & color_mask << 2);
     data >>= 6;
-    b = (uint8_t(data) & color_mask) << 2;
+    b = (uint8_t(data) & color_mask << 2);
     data >>= 6;
     br = Color(r, g, b);
 }

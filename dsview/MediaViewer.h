@@ -19,12 +19,15 @@ class MediaViewer
     private:
         void clearTexture();
         void imageTexture();
+        void toggleFullscreen();
 
         static void audioCallback(void *userdata, uint8_t *stream, int len);
 
         SDL_Window *win;
         SDL_Renderer *ren;
         SDL_Texture *tex;
+
+        bool fullscreen;
 
 		int win_h, win_w;
 

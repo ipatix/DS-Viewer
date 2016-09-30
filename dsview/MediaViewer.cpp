@@ -7,7 +7,7 @@
 #include "Xcept.h"
 
 MediaViewer::MediaViewer(Image& _top, Image& _bottom)
-    : top(_top), bottom(_bottom), audiobuf(AUDIO_BUF_SIZE, false)
+    : fullscreen(false), top(_top), bottom(_bottom), audiobuf(AUDIO_BUF_SIZE, false)
 {
     // Video
     assert(top.Height() == bottom.Height());
@@ -18,11 +18,11 @@ MediaViewer::MediaViewer(Image& _top, Image& _bottom)
         throw Xcept("SDL_CreateWindow Error: %s", SDL_GetError());
     if (!(ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED)))
         throw Xcept("SDL_CreateRenderer Error: %s", SDL_GetError());
-	if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2") == SDL_FALSE)
-		throw Xcept("SDL_SetHint Error: %s", SDL_GetError());
+    if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2") == SDL_FALSE)
+        throw Xcept("SDL_SetHint Error: %s", SDL_GetError());
     if (!(tex = SDL_CreateTexture(ren, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, (int)top.Width(), (int)top.Height() * 2)))
         throw Xcept("SDL_CreateTexture Error: %s", SDL_GetError());
-	SDL_GetWindowSize(win, &win_w, &win_h);
+    SDL_GetWindowSize(win, &win_w, &win_h);
     UpdateVideo(true);
     // Audio
     SDL_AudioSpec spec;
@@ -48,27 +48,31 @@ MediaViewer::~MediaViewer()
 
 bool MediaViewer::UpdateVideo(bool blank)
 {
-	SDL_Event sev;
-	while (SDL_PollEvent(&sev))
-	{
-		switch (sev.type)
-		{
-		case SDL_WINDOWEVENT:
-			switch (sev.window.event)
-			{
-				case SDL_WINDOWEVENT_RESIZED:
-				case SDL_WINDOWEVENT_SIZE_CHANGED:
-					win_w = sev.window.data1;
-					win_h = sev.window.data2;
-					break;
-				case SDL_WINDOWEVENT_CLOSE:
-					return false;
-			}
-			break;
-		case SDL_QUIT:
-			return false;
-		}
-	}
+    SDL_Event sev;
+    while (SDL_PollEvent(&sev))
+    {
+        switch (sev.type)
+        {
+            case SDL_WINDOWEVENT:
+                switch (sev.window.event)
+                {
+                    case SDL_WINDOWEVENT_RESIZED:
+                    case SDL_WINDOWEVENT_SIZE_CHANGED:
+                        win_w = sev.window.data1;
+                        win_h = sev.window.data2;
+                        break;
+                    case SDL_WINDOWEVENT_CLOSE:
+                        return false;
+                }
+                break;
+            case SDL_QUIT:
+                return false;
+            case SDL_KEYDOWN:
+                if (sev.key.state == SDL_PRESSED && sev.key.keysym.sym == SDLK_f)
+                    toggleFullscreen();
+                break;
+        }
+    }
 
     SDL_RenderClear(ren);
     if (blank)
@@ -76,20 +80,20 @@ bool MediaViewer::UpdateVideo(bool blank)
     else
         imageTexture();
     SDL_Rect src, dest;
-	src.w = int(top.Width());
-	src.h = int(top.Height()) * 2;
+    src.w = int(top.Width());
+    src.h = int(top.Height()) * 2;
     src.x = 0;
     src.y = 0;
-	//float scaling_factor = 1.f;
-	dest.w = int(top.Width()) * win_h / (int(top.Height()) * 2);
-	dest.h = win_h;
+    //float scaling_factor = 1.f;
+    dest.w = int(top.Width()) * win_h / (int(top.Height()) * 2);
+    dest.h = win_h;
     dest.x = win_w / 2 - int(dest.w / 2);
     dest.y = 0;
     SDL_RenderCopy(ren, tex, &src, &dest);
     //SDL_RenderCopy(ren, tex, NULL, NULL);
     SDL_RenderPresent(ren);
 
-	return true;
+    return true;
 }
 
 TRingbuffer<float>& MediaViewer::GetAudioBuffer()
@@ -101,14 +105,14 @@ void MediaViewer::clearTexture()
 {
     void *pixels;
     int pitch;
-	{
-		uint32_t f;
-		int a, w, h;
-		SDL_QueryTexture(tex, &f, &a, &w, &h);
-	}
+    {
+        uint32_t f;
+        int a, w, h;
+        SDL_QueryTexture(tex, &f, &a, &w, &h);
+    }
     SDL_LockTexture(tex, NULL, &pixels, &pitch);
     uint32_t *upixels = (uint32_t *)pixels;
-	size_t offset = size_t(pitch / sizeof(uint32_t)) * top.Height() * 2;
+    size_t offset = size_t(pitch / sizeof(uint32_t)) * top.Height() * 2;
     std::fill(upixels, upixels + offset, 0xFF00FF);
     SDL_UnlockTexture(tex);
 }
@@ -123,9 +127,9 @@ void MediaViewer::imageTexture()
     {
         for (size_t j = 0; j < top.Width(); j++)
         {
-			*upixels++ = 0xFF;
-			*upixels++ = top(i, j).b;
-			*upixels++ = top(i, j).g;
+            *upixels++ = 0xFF;
+            *upixels++ = top(i, j).b;
+            *upixels++ = top(i, j).g;
             *upixels++ = top(i, j).r;
         }
         upixels += (size_t(pitch) / sizeof(uint32_t)) - top.Width();
@@ -134,14 +138,21 @@ void MediaViewer::imageTexture()
     {
         for (size_t j = 0; j < top.Width(); j++)
         {
-			*upixels++ = 0xFF;
-			*upixels++ = bottom(i, j).b;
-			*upixels++ = bottom(i, j).g;
+            *upixels++ = 0xFF;
+            *upixels++ = bottom(i, j).b;
+            *upixels++ = bottom(i, j).g;
             *upixels++ = bottom(i, j).r;
         }
         upixels += (size_t(pitch) / sizeof(uint32_t)) - top.Width();
     }
     SDL_UnlockTexture(tex);
+}
+
+void MediaViewer::toggleFullscreen()
+{
+    fullscreen = !fullscreen;
+    if (SDL_SetWindowFullscreen(win, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0))
+        throw Xcept("SDL_SetWindowFullscreen: %s", SDL_GetError());
 }
 
 void MediaViewer::audioCallback(void *userdata, uint8_t *stream, int len)

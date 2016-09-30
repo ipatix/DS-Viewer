@@ -27,7 +27,7 @@ TRingbuffer<T>::~TRingbuffer()
 template <typename T>
 void TRingbuffer<T>::Put(T *inData, size_t nElements)
 {
-    unique_lock<mutex> lock(countLock);
+    std::unique_lock<std::mutex> lock(countLock);
     while (freeCount < nElements){
         sigToFeeder.wait(lock);
     }
@@ -73,7 +73,7 @@ void TRingbuffer<T>::Take(T *outData, size_t nElements)
     template <typename T>
 void TRingbuffer<T>::Clear()
 {
-    unique_lock<mutex>(countLock);
+    std::unique_lock<std::mutex>(countLock);
     std::fill(bufData.begin(), bufData.end(), T());
 }
 

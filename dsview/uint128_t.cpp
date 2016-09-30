@@ -146,5 +146,5 @@ uint128_t::operator uint64_t() const
 
 void uint128_t::print()
 {
-	printf("%llX-%llX\n", high, low);
+	printf("%lX-%lX\n", high, low);
 }

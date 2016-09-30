@@ -22,7 +22,7 @@ struct MAudioFrame
 
 struct MPixelFrame
 {
-	Color GetColor() { return Color(r << 2, g << 2, b << 2); }
+	Color GetColor() { return Color(uint8_t(r << 2), uint8_t(g << 2), uint8_t(b << 2)); }
 
 	uint8_t flags;
 	uint8_t r;
