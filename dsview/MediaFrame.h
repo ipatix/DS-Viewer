@@ -51,11 +51,11 @@ struct MediaFrame
 *
 * Each Frame is 4 bytes big. It may either be a an audio or video frame:
 * - Video:
-*		VSYNC SIG:   0b1100001, 0x00, 0x00, 0x00
-*		TOP PIXEL:   0b1100000, 0xRR, 0xGG, 0xBB
-*		BOT PIXEL:	 0b1100010, 0xRR, 0xGG, 0xBB
+*		VSYNC SIG:   0b11000001, 0x00, 0x00, 0x00
+*		TOP PIXEL:   0b11000000, 0xRR, 0xGG, 0xBB
+*		BOT PIXEL:	 0b11000010, 0xRR, 0xGG, 0xBB
 * - Audio:
-*      STEREO SMPL: 0b1000000, 0xLL, 0xLR, 0xRR
+*      STEREO SMPL: 0b10000000, 0xLL, 0xLR, 0xRR
 * - Dummy:
-*      DATA:		 0b0000000, 0x00, 0x00, 0x00
+*      DATA:		 0b00000000, 0x00, 0x00, 0x00
 */
