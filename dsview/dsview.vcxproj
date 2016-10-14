@@ -154,7 +154,6 @@
     <ClCompile Include="CableReceiver.cpp" />
     <ClCompile Include="dsview.cpp" />
     <ClCompile Include="Image.cpp" />
-    <ClCompile Include="MediaFrame.cpp" />
     <ClCompile Include="MediaViewer.cpp" />
     <ClCompile Include="TRingbuffer.cpp" />
     <ClCompile Include="uint128_t.cpp" />

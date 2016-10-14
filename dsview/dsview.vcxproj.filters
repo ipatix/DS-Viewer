@@ -36,9 +36,6 @@
     <ClCompile Include="Xcept.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="MediaFrame.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
     <ClCompile Include="Buffer.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
