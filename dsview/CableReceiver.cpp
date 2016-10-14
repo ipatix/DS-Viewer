@@ -15,12 +15,10 @@ using namespace std;
 // interface
 
 ICableReceiver::ICableReceiver()
-    : rbuf(0x100000, true), dbuf(4096, rbuf)
+    : rbuf(0x100000, true), dbuf(0x10000, rbuf)
 {
     shutdown = false;
 }
-
-
 
 void ICableReceiver::Receive(Image& top_screen, Image& bottom_screen, TRingbuffer<float>& audio_buffer)
 {
