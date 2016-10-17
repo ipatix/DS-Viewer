@@ -44,22 +44,22 @@ void ICableReceiver::Receive(Image& top_screen, Image& bottom_screen, TRingbuffe
                 if (fr.IsVSync())
                     break;
 
-                    if (fr.IsTopScr())
+                if (fr.IsTopScr())
+                {
+                    top_screen(cur_row, cur_col) = fr.pframe.GetColor();
+                }
+                else
+                {
+                    bottom_screen(cur_row, cur_col++) = fr.pframe.GetColor();
+                    if (cur_col >= 256)
                     {
-                        top_screen(cur_row, cur_col) = fr.pframe.GetColor();
+                        cur_col = 0;
+                        if (cur_row == 191)
+                            cur_row = 0;
+                        else 
+                            cur_row++;
                     }
-                    else
-                    {
-                        bottom_screen(cur_row, cur_col++) = fr.pframe.GetColor();
-                        if (cur_col >= 256)
-                        {
-                            cur_col = 0;
-                            if (cur_row == 191)
-                                cur_row = 0;
-                            else 
-                                cur_row++;
-                        }
-                    }
+                }
             }
             else
             {
