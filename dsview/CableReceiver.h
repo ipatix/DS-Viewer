@@ -6,6 +6,7 @@
 #include "TRingbuffer.h"
 #include "Buffer.h"
 #include "Image.h"
+#include "ftd2xx_wrap.h"
 
 #define VIDEO_WIDTH 256
 #define VIDEO_HEIGHT 192
@@ -33,4 +34,17 @@ class DummyReceiver : public ICableReceiver
     protected:
         static void receiverThreadHandler(TRingbuffer<uint8_t> *rbuf, volatile bool *shutdown, volatile bool *is_shutdown);
         std::thread receiver_thread;
+};
+
+class DSReciever : public ICableReceiver
+{
+public:
+	DSReciever();
+	~DSReciever();
+protected:
+	static void receiverThreadHandler(TRingbuffer<uint8_t> *rbuf, volatile bool *shutdown, volatile bool *is_shutdown,
+		Ftd2xxDevice *usb_device);
+	std::thread *receiver_thread;
+	Ftd2xxDevice *usb_device;
+
 };

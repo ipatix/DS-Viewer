@@ -106,21 +106,6 @@ class Ftd2xxDevice
                 throw Xcept("FT_Close: %s", getErrText(err));
         }
 
-
-        // FT_SetVIDPID
-        static void SetVIDPID(DWORD vid, DWORD pid) {
-            FT_STATUS err;
-            if ((err = FT_SetVIDPID(vid, pid)) != FT_OK)
-                throw Xcept("FT_SetVIDPID: %s", getErrText(err));
-        }
-
-        // FT_GetVIDPID
-        static void GetVIDPID(DWORD& vid, DWORD& pid) {
-            FT_STATUS err;
-            if ((err = FT_GetVIDPID(&vid, &pid)) != FT_OK)
-                throw Xcept("FT_GetVIDPID: %s", getErrText(err));
-        }
-
         // FT_GetDeviceInfoList
         static std::vector<FT_DEVICE_LIST_INFO_NODE>& GetDeviceInfoList() {
             updateDeviceIndex();

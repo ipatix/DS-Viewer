@@ -179,3 +179,47 @@ void DummyReceiver::receiverThreadHandler(TRingbuffer<uint8_t> *rbuf, volatile b
     *is_shutdown = true;
     cout << "Thread stopped" << endl;
 }
+
+/*
+ * DSReceiver
+ */
+
+DSReciever::DSReciever()
+{
+	usb_device = new Ftd2xxDevice();
+	if ((usb_device->GetDeviceInfoList().at(0).Flags & 2) == 0)
+		throw Xcept("ERROR: FT232 running in USB 1.1 mode, not in USB 2.0 mode");
+	usb_device->SetBitMode(0xFF, 0x40);
+	usb_device->SetLatencyTimer(2);
+	usb_device->SetUSBParameters(0x10000, 0x10000);
+	usb_device->SetFlowControl(FT_FLOW_RTS_CTS, 0, 0);
+	usb_device->Purge(FT_PURGE_RX | FT_PURGE_TX);
+	usb_device->SetTimeouts(1000, 1000);
+	receiver_thread = new std::thread(DSReciever::receiverThreadHandler, &rbuf, &shutdown, &hasStopped, usb_device);
+	hasStopped = false;
+}
+
+DSReciever::~DSReciever()
+{
+	receiver_thread->join();
+	delete usb_device;
+	delete receiver_thread;
+}
+
+void DSReciever::receiverThreadHandler(TRingbuffer<uint8_t>* rbuf, volatile bool *shutdown, volatile bool *is_shutdown,
+	Ftd2xxDevice *usb_device)
+{
+	cout << "Started Thread..." << endl;
+	std::vector<uint8_t> cable_buf(0x10000, 0);
+	while (!*shutdown)
+	{
+		cout << "Reading Block..." << endl;
+		size_t read = usb_device->Read(cable_buf.data(), cable_buf.size());
+		std::fill(cable_buf.begin() + read, cable_buf.end(), 0);
+		if (read != cable_buf.size())
+			cerr << "Warning: USB Read Data timeout" << endl;
+		rbuf->Put(cable_buf.data(), cable_buf.size());
+	}
+	usb_device->Close();
+	*is_shutdown = true;
+}

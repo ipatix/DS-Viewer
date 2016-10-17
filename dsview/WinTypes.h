@@ -1,3 +1,4 @@
+#ifndef _WIN32
 #ifndef __WINDOWS_TYPES__
 #define __WINDOWS_TYPES__
 
@@ -134,3 +135,4 @@ typedef struct timeval FILETIME;
 #endif
 
 #endif /* __WINDOWS_TYPES__ */
+#endif

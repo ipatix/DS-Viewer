@@ -1,5 +1,6 @@
 #include <iostream>
 #include <exception>
+#include <chrono>
 
 #include "MediaViewer.h"
 #include "CableReceiver.h"
@@ -20,7 +21,8 @@ int main(int argc, char **argv)
         Image top(192, 256);
         Image bot(192, 256);
         MediaViewer mv(top, bot);
-        DummyReceiver receiver;
+        //DummyReceiver receiver;
+		DSReciever receiver;
 
 		bool running = true;
         while (running)
@@ -39,6 +41,7 @@ int main(int argc, char **argv)
     catch (const std::exception& e)
     {
         cerr << e.what() << endl;
+		this_thread::sleep_for(chrono::milliseconds(1000));
     }
 
     return 0;
