@@ -18,8 +18,8 @@ int main(int argc, char **argv)
 	(void)argv;
     try
     {
-        Image top(192, 256);
-        Image bot(192, 256);
+        Image top(192, 263);
+        Image bot(192, 263);
         MediaViewer mv(top, bot);
         //DummyReceiver receiver;
 		DSReciever receiver;

@@ -1,5 +1,6 @@
 #include <cstring>
 #include <cassert>
+#include <cstdio>
 #ifdef _WIN32
 #define _USE_MATH_DEFINES
 #endif
@@ -49,10 +50,10 @@ void ICableReceiver::Receive(Image& top_screen, Image& bottom_screen, TRingbuffe
                 else
                 {
                     bottom_screen(cur_row, cur_col++) = fr.pframe.GetColor();
-                    if (cur_col >= 256)
+                    if (cur_col >= top_screen.Width())
                     {
                         cur_col = 0;
-                        if (cur_row == 191)
+                        if (cur_row == top_screen.Height() - 1)
                             cur_row = 0;
                         else 
                             cur_row++;
@@ -64,10 +65,7 @@ void ICableReceiver::Receive(Image& top_screen, Image& bottom_screen, TRingbuffe
                 float l, r;
                 fr.aframe.GetAudio(l, r);
                 if (audio_target_data.size() >= 3200)
-                {
-                    audio_buffer.Put(audio_target_data.data(), audio_target_data.size());
-                    audio_target_data.clear();
-                }
+                    break;
                 audio_target_data.push_back(l);
                 audio_target_data.push_back(r);
             }
@@ -75,8 +73,8 @@ void ICableReceiver::Receive(Image& top_screen, Image& bottom_screen, TRingbuffe
         }
         else
         {
-            cerr << "Warning, empty frame detected on stream!" << endl;
             uint8_t *fr_ptr = (uint8_t *)&fr;
+            fprintf(stderr, "Error: broken frame %02x:%02x:%02x:%02x\n", fr_ptr[0], fr_ptr[1], fr_ptr[2], fr_ptr[3]);
             fr_ptr[0] = fr_ptr[1];
             fr_ptr[1] = fr_ptr[2];
             fr_ptr[2] = fr_ptr[3];
@@ -213,7 +211,7 @@ void DSReciever::receiverThreadHandler(TRingbuffer<uint8_t>* rbuf, volatile bool
 	std::vector<uint8_t> cable_buf(0x10000, 0);
 	while (!*shutdown)
 	{
-		cout << "Reading Block..." << endl;
+		//cout << "Reading Block..." << endl;
 		size_t read = usb_device->Read(cable_buf.data(), cable_buf.size());
 		std::fill(cable_buf.begin() + read, cable_buf.end(), 0);
 		if (read != cable_buf.size())
