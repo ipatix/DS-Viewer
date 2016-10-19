@@ -43,7 +43,7 @@ struct MediaFrame
 	bool IsVideo()  { return flags & 0b01000000 ? true : false; }
 	bool IsAudio()  { return flags & 0b01000000 ? false : true; }
 	bool IsVSync()  { return flags & 0b00000001 ? true : false; }
-	bool IsTopScr() { return flags & 0b00000010 ? false : true; }
+	bool IsTopScr() { return flags & 0b00000010 ? true : false; }
 };
 
 /*

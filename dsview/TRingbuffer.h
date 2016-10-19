@@ -12,7 +12,7 @@ template <typename T>
 class TRingbuffer
 {
     public:
-        TRingbuffer(size_t elementCount, bool blockOnTake);
+        TRingbuffer(size_t elementCount, bool blockOnTake, bool blockOnPut);
         ~TRingbuffer();
 
         void Put(T *inData, size_t nElements);
@@ -31,6 +31,7 @@ class TRingbuffer
         size_t freeCount;
         size_t dataCount;
         bool blockOnTake;
+        bool blockOnPut;
 };
 
 #include "TRingbuffer.cpp"

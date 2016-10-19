@@ -7,7 +7,7 @@
 #include "Xcept.h"
 
 MediaViewer::MediaViewer(Image& _top, Image& _bottom)
-    : fullscreen(false), top(_top), bottom(_bottom), audiobuf(AUDIO_BUF_SIZE, false)
+    : fullscreen(false), top(_top), bottom(_bottom), audiobuf(AUDIO_BUF_SIZE, false, false)
 {
     // Video
     assert(top.Height() == bottom.Height());

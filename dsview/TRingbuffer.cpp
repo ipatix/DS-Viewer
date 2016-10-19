@@ -9,7 +9,7 @@
  */
 
 template <typename T>
-TRingbuffer<T>::TRingbuffer(size_t elementCount, bool blockOnTake)
+TRingbuffer<T>::TRingbuffer(size_t elementCount, bool blockOnTake, bool blockOnPut)
     : bufData(elementCount)
 {
     freePos = 0;
@@ -17,6 +17,7 @@ TRingbuffer<T>::TRingbuffer(size_t elementCount, bool blockOnTake)
     freeCount = elementCount;
     dataCount = 0;
     this->blockOnTake = blockOnTake;
+    this->blockOnPut = blockOnPut;
 }
 
 template <typename T>
@@ -27,17 +28,29 @@ TRingbuffer<T>::~TRingbuffer()
 template <typename T>
 void TRingbuffer<T>::Put(T *inData, size_t nElements)
 {
-    std::unique_lock<std::mutex> lock(countLock);
-    while (freeCount < nElements){
-        sigToFeeder.wait(lock);
+    if (blockOnPut) {
+        std::unique_lock<std::mutex> lock(countLock);
+        while (freeCount < nElements){
+            sigToFeeder.wait(lock);
+        }
+        while (nElements > 0) {
+            size_t count = put(inData, nElements);
+            inData += count;
+            nElements -= count;
+        }
+        if (blockOnTake)
+            sigToConsumer.notify_one();
+    } else {
+        if (freeCount >= nElements) {
+            while (nElements > 0) {
+                size_t count = put(inData, nElements);
+                inData += count;
+                nElements -= count;
+            }
+            if (blockOnTake)
+                sigToConsumer.notify_one();
+        }
     }
-    while (nElements > 0) {
-        size_t count = put(inData, nElements);
-        inData += count;
-        nElements -= count;
-    }
-    if (blockOnTake)
-        sigToConsumer.notify_one();
 }
 
 template <typename T>
@@ -70,7 +83,7 @@ void TRingbuffer<T>::Take(T *outData, size_t nElements)
     }
 }
 
-    template <typename T>
+template <typename T>
 void TRingbuffer<T>::Clear()
 {
     std::unique_lock<std::mutex>(countLock);
@@ -81,7 +94,7 @@ void TRingbuffer<T>::Clear()
  * private Ringbuffer
  */
 
-    template <typename T>
+template <typename T>
 size_t TRingbuffer<T>::put(T *inData, size_t nElements)
 {
     bool wrap = nElements >= bufData.size() - freePos;
@@ -101,7 +114,7 @@ size_t TRingbuffer<T>::put(T *inData, size_t nElements)
     return count;
 }
 
-    template <typename T>
+template <typename T>
 size_t TRingbuffer<T>::take(T *outData, size_t nElements)
 {
     bool wrap = nElements >= bufData.size() - dataPos;
