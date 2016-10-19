@@ -64,8 +64,8 @@ void ICableReceiver::Receive(Image& top_screen, Image& bottom_screen, TRingbuffe
             {
                 float l, r;
                 fr.aframe.GetAudio(l, r);
-                if (audio_target_data.size() >= 3200)
-                    break;
+				if (audio_target_data.size() >= 1600)
+					break;
                 audio_target_data.push_back(l);
                 audio_target_data.push_back(r);
             }
@@ -75,14 +75,12 @@ void ICableReceiver::Receive(Image& top_screen, Image& bottom_screen, TRingbuffe
         {
             uint8_t *fr_ptr = (uint8_t *)&fr;
             fprintf(stderr, "Error: broken frame %02x:%02x:%02x:%02x\n", fr_ptr[0], fr_ptr[1], fr_ptr[2], fr_ptr[3]);
-            fr_ptr[0] = fr_ptr[1];
-            fr_ptr[1] = fr_ptr[2];
-            fr_ptr[2] = fr_ptr[3];
-            dbuf.Take(fr_ptr + 3, 1);
+			fr_ptr[0] = fr_ptr[3];
+            dbuf.Take(fr_ptr + 1, 3);
         }
     }
 
-    audio_buffer.Put(audio_target_data.data(), audio_target_data.size());
+    //audio_buffer.Put(audio_target_data.data(), audio_target_data.size());
 }
 
 void ICableReceiver::Stop()

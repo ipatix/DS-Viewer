@@ -14,7 +14,7 @@ MediaViewer::MediaViewer(Image& _top, Image& _bottom)
     assert(top.Width() == bottom.Width());
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
         throw Xcept("SDL_Init Error: %s", SDL_GetError());
-    if (!(win = SDL_CreateWindow("dsview V0.1", 100, 100, 256, 384, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE)))
+    if (!(win = SDL_CreateWindow("dsview V0.1", 100, 100, VIDEO_WIDTH, VIDEO_HEIGHT * 2, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE)))
         throw Xcept("SDL_CreateWindow Error: %s", SDL_GetError());
     if (!(ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED)))
         throw Xcept("SDL_CreateRenderer Error: %s", SDL_GetError());

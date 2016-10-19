@@ -5,6 +5,7 @@
 #include "MediaViewer.h"
 #include "CableReceiver.h"
 #include "uint128_t.h"
+#include "Config.h"
 
 #ifdef _WIN32
 extern "C" { FILE __iob_func[3] = {*stdin, *stdout, *stderr}; }
@@ -18,8 +19,8 @@ int main(int argc, char **argv)
 	(void)argv;
     try
     {
-        Image top(192, 263);
-        Image bot(192, 263);
+        Image top(VIDEO_HEIGHT, VIDEO_WIDTH);
+        Image bot(VIDEO_HEIGHT, VIDEO_WIDTH);
         MediaViewer mv(top, bot);
         //DummyReceiver receiver;
 		DSReciever receiver;
