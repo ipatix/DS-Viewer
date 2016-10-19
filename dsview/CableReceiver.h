@@ -7,9 +7,7 @@
 #include "Buffer.h"
 #include "Image.h"
 #include "ftd2xx_wrap.h"
-
-#define VIDEO_WIDTH 256
-#define VIDEO_HEIGHT 192
+#include "Config.h"
 
 class ICableReceiver
 {

@@ -89,7 +89,7 @@ void ICableReceiver::Receive(Image& top_screen, Image& bottom_screen, TRingbuffe
         }
     }
 
-    audio_buffer.Put(audio_target_data.data(), audio_target_data.size());
+    //audio_buffer.Put(audio_target_data.data(), audio_target_data.size());
 }
 
 void ICableReceiver::Stop()
