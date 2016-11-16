@@ -26,15 +26,20 @@ int main(int argc, char **argv)
 		DSReciever receiver;
 
 		bool running = true;
+		auto lastTime = chrono::high_resolution_clock::now();
         while (running)
         {
             receiver.Receive(top, bot, mv.GetAudioBuffer());
             running = mv.UpdateVideo(false);
+
+			auto afterTime = chrono::high_resolution_clock::now();
+			cout << "Rendering took: " << chrono::duration_cast<chrono::milliseconds>(afterTime - lastTime).count() << " ms" << endl;
+			lastTime = afterTime;
         }
 		receiver.Stop();
 		while (true)
 		{
-			receiver.Receive(top, bot, mv.GetAudioBuffer());
+			//receiver.Receive(top, bot, mv.GetAudioBuffer());
 			if (receiver.HasStopped())
 				break;
 		}

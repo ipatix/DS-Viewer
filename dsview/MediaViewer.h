@@ -16,6 +16,7 @@ class MediaViewer
         ~MediaViewer();
         bool UpdateVideo(bool blank);
         TRingbuffer<float>& GetAudioBuffer();
+		static bool IsMuted() { return mute; }
     private:
         void clearTexture();
         void imageTexture();
@@ -28,6 +29,7 @@ class MediaViewer
         SDL_Texture *tex;
 
         bool fullscreen;
+		static bool mute;
 
 		int win_h, win_w;
 

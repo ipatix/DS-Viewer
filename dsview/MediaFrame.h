@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <cstdio>
 
 #include "Image.h"
 
@@ -8,8 +9,10 @@ struct MAudioFrame
 {
 	void GetAudio(float& fL, float& fR) 
 	{
-		int left = (l << 4) | (lr >> 4); left -= 0x800;
-		int right = ((lr & 0xF) << 8) | r; right -= 0x800;
+		int left = (l << 4) | (lr >> 4); 
+		left -= 0x800;
+		int right = ((lr & 0xF) << 8) | r; 
+		right -= 0x800;
 		fL = float(left) / float(0x800);
 		fR = float(right) / float(0x800);
 	}
