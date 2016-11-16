@@ -6,6 +6,8 @@
 #include "Config.h"
 #include "Xcept.h"
 
+bool MediaViewer::mute = false;
+
 MediaViewer::MediaViewer(Image& _top, Image& _bottom)
     : fullscreen(false), top(_top), bottom(_bottom), audiobuf(AUDIO_BUF_SIZE, false, false)
 {
@@ -14,13 +16,13 @@ MediaViewer::MediaViewer(Image& _top, Image& _bottom)
     assert(top.Width() == bottom.Width());
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
         throw Xcept("SDL_Init Error: %s", SDL_GetError());
-    if (!(win = SDL_CreateWindow("dsview V0.1", 100, 100, VIDEO_WIDTH, VIDEO_HEIGHT * 2, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE)))
+    if (!(win = SDL_CreateWindow("dsview V0.1", 100, 100, VISIBLE_X, VISIBLE_Y * 2, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE)))
         throw Xcept("SDL_CreateWindow Error: %s", SDL_GetError());
     if (!(ren = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED)))
         throw Xcept("SDL_CreateRenderer Error: %s", SDL_GetError());
     if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2") == SDL_FALSE)
         throw Xcept("SDL_SetHint Error: %s", SDL_GetError());
-    if (!(tex = SDL_CreateTexture(ren, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, (int)top.Width(), (int)top.Height() * 2)))
+    if (!(tex = SDL_CreateTexture(ren, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, VISIBLE_X, VISIBLE_Y * 2)))
         throw Xcept("SDL_CreateTexture Error: %s", SDL_GetError());
     SDL_GetWindowSize(win, &win_w, &win_h);
     UpdateVideo(true);
@@ -68,10 +70,12 @@ bool MediaViewer::UpdateVideo(bool blank)
             case SDL_QUIT:
                 return false;
             case SDL_KEYDOWN:
-                if (sev.key.state == SDL_PRESSED && sev.key.keysym.sym == SDLK_f)
-                    toggleFullscreen();
-                else if (sev.key.state == SDL_PRESSED && sev.key.keysym.sym == SDLK_q)
-                    return false;
+				if (sev.key.state == SDL_PRESSED && sev.key.keysym.sym == SDLK_f)
+					toggleFullscreen();
+				else if (sev.key.state == SDL_PRESSED && sev.key.keysym.sym == SDLK_q)
+					return false;
+				else if (sev.key.state == SDL_PRESSED && sev.key.keysym.sym == SDLK_m)
+					mute = !mute;
                 break;
         }
     }
@@ -82,12 +86,12 @@ bool MediaViewer::UpdateVideo(bool blank)
     else
         imageTexture();
     SDL_Rect src, dest;
-    src.w = int(top.Width());
-    src.h = int(top.Height()) * 2;
+    src.w = int(VISIBLE_X);
+    src.h = int(VISIBLE_Y) * 2;
     src.x = 0;
     src.y = 0;
     //float scaling_factor = 1.f;
-    dest.w = int(top.Width()) * win_h / (int(top.Height()) * 2);
+    dest.w = int(VISIBLE_X) * win_h / (int(VISIBLE_Y) * 2);
     dest.h = win_h;
     dest.x = win_w / 2 - int(dest.w / 2);
     dest.y = 0;
@@ -125,27 +129,27 @@ void MediaViewer::imageTexture()
     int pitch;
     SDL_LockTexture(tex, NULL, &pixels, &pitch);
     uint8_t *upixels = (uint8_t *)pixels;
-    for (size_t i = 0; i < top.Height(); i++)
+    for (size_t i = START_Y; i < START_Y + VISIBLE_Y; i++)
     {
-        for (size_t j = 0; j < top.Width(); j++)
+        for (size_t j = START_X; j < START_X + VISIBLE_X; j++)
         {
             *upixels++ = 0xFF;
             *upixels++ = top(i, j).b;
             *upixels++ = top(i, j).g;
             *upixels++ = top(i, j).r;
         }
-        upixels += (size_t(pitch) / sizeof(uint32_t)) - top.Width();
+        upixels += (size_t(pitch) / sizeof(uint32_t)) - VISIBLE_X;
     }
-    for (size_t i = 0; i < top.Height(); i++)
+    for (size_t i = START_Y; i < START_Y + VISIBLE_Y; i++)
     {
-        for (size_t j = 0; j < top.Width(); j++)
+        for (size_t j = START_X; j < START_X + VISIBLE_X; j++)
         {
             *upixels++ = 0xFF;
             *upixels++ = bottom(i, j).b;
             *upixels++ = bottom(i, j).g;
             *upixels++ = bottom(i, j).r;
         }
-        upixels += (size_t(pitch) / sizeof(uint32_t)) - top.Width();
+        upixels += (size_t(pitch) / sizeof(uint32_t)) - VISIBLE_X;
     }
     SDL_UnlockTexture(tex);
 }
@@ -163,4 +167,7 @@ void MediaViewer::audioCallback(void *userdata, uint8_t *stream, int len)
     size_t frames = len / sizeof(float) / 2;
     TRingbuffer<float> *buf = (TRingbuffer<float> *)userdata;
     buf->Take(buffer, frames * 2);
+	if (MediaViewer::IsMuted())
+		for (size_t i = 0; i < frames * 2; i++)
+			buffer[i] = 0.f;
 }

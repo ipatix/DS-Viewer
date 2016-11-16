@@ -16,7 +16,7 @@ using namespace std;
 // interface
 
 ICableReceiver::ICableReceiver()
-    : rbuf(0x100000, true, false), dbuf(0x10000, rbuf)
+    : hpf(5.f), rbuf(0x200000, true, true), dbuf(0x10000, rbuf)
 {
     shutdown = false;
 }
@@ -33,16 +33,22 @@ void ICableReceiver::Receive(Image& top_screen, Image& bottom_screen, TRingbuffe
 
 
     MediaFrame fr;
+	uint8_t *fr_ptr = (uint8_t *)&fr;
     static_assert(sizeof(MediaFrame) == 4, "Media Frames must be 4 byte big");
     dbuf.Take((uint8_t *)&fr, sizeof(fr));
 
+	int bad_count = 0;
+
     while (true) {
+		//fprintf(stderr, "%02x:%02x:%02x:%02x\n", fr_ptr[0], fr_ptr[1], fr_ptr[2], fr_ptr[3]);
         if (fr.IsValid())
         {
             if (fr.IsVideo())
             {
-                if (fr.IsVSync())
-                    break;
+				if (fr.IsVSync()) {
+					//cout << "Recieved VSync\n";
+					break;
+				}
 
                 if (fr.IsTopScr())
                 {
@@ -73,8 +79,12 @@ void ICableReceiver::Receive(Image& top_screen, Image& bottom_screen, TRingbuffe
             {
                 float l, r;
                 fr.aframe.GetAudio(l, r);
-                if (audio_target_data.size() >= 1600)
-                    break;
+				
+				if (audio_target_data.size() >= 2400) {
+					cout << "Early breaking...\n";
+					cout << "Audio count: " << audio_target_data.size() / 2 << endl;
+					break;
+				}
                 audio_target_data.push_back(l);
                 audio_target_data.push_back(r);
             }
@@ -82,13 +92,17 @@ void ICableReceiver::Receive(Image& top_screen, Image& bottom_screen, TRingbuffe
         }
         else
         {
-            uint8_t *fr_ptr = (uint8_t *)&fr;
             //fprintf(stderr, "Error: broken frame %02x:%02x:%02x:%02x\n", fr_ptr[0], fr_ptr[1], fr_ptr[2], fr_ptr[3]);
-            fr_ptr[0] = fr_ptr[3];
-            dbuf.Take(fr_ptr + 1, 3);
+            fr_ptr[0] = fr_ptr[1];
+			fr_ptr[1] = fr_ptr[2];
+			fr_ptr[2] = fr_ptr[3];
+            dbuf.Take(fr_ptr + 3, 1);
+			bad_count++;
         }
     }
-
+	if (bad_count > 0)
+		cout << "Bad count: " << bad_count << endl;
+	//hpf.process(audio_target_data.data(), audio_target_data.size() / 2);
     audio_buffer.Put(audio_target_data.data(), audio_target_data.size());
 }
 
@@ -225,6 +239,8 @@ void DSReciever::receiverThreadHandler(TRingbuffer<uint8_t>* rbuf, volatile bool
 			cerr << "Warning: USB Read Data timeout" << endl;
 		rbuf->Put(cable_buf.data(), cable_buf.size());
 	}
+	cout << "Closing USB connection..." << endl;
 	usb_device->Close();
 	*is_shutdown = true;
+	cout << "Shutdown!" << endl;
 }

@@ -83,6 +83,9 @@
     <ClInclude Include="ftd2xx_wrap.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="HighPass.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

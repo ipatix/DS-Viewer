@@ -1,6 +1,7 @@
 #ifdef _RINGBUFFER_H
 
 #include <algorithm>
+#include <iostream>
 
 #include "TRingbuffer.h"
 
@@ -70,6 +71,7 @@ void TRingbuffer<T>::Take(T *outData, size_t nElements)
     } else {
         if (dataCount < nElements) {
             std::fill(outData, outData + nElements, T());
+			std::cout << "BUFFER UNDERRUN\n";
         } else {
             // output
             std::unique_lock<std::mutex> lock(countLock);
