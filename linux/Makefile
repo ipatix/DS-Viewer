@@ -1,5 +1,5 @@
-CXX = g++
-CXXFLAGS = -Wall -Wextra -Wconversion -Wunreachable-code -std=c++0x -D NDEBUG -O3
+CXX = clang++
+CXXFLAGS = -Wall -Wextra -Wconversion -Wunreachable-code -std=c++0x -O3 -g
 BINARY = dsview
 LIBS = -lm -lSDL2 -pthread libftd2xx.a -ldl
 
@@ -27,9 +27,9 @@ clean:
 
 $(BINARY): $(OBJ_FILES)
 	@printf "[$(RED)Linking$(NCOL)] $(WHITE)$(BINARY)$(NCOL)\n"
-	@gcc -o $@ $(CXXFLAGS) $^ $(LIBS) -lstdc++
+	$(CXX) -o $@ $(CXXFLAGS) $^ $(LIBS)
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(SRC_DIR)/*.h
 	@printf "[$(GREEN)Compiling$(NCOL)] $(WHITE)$@$(NCOL)\n"
-	@$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCLUDE)
+	$(CXX) -c -o $@ $< $(CXXFLAGS) $(INCLUDE)
 

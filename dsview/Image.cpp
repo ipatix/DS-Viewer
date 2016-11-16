@@ -80,20 +80,3 @@ Image::Image(size_t _height, size_t _width)
     : pixels(_height * _width), height(_height), width(_width)
 {
 }
-
-Color& Image::operator() (size_t y, size_t x)
-{
-    assert(y < height);
-    assert(x < width);
-    return pixels[width * y + x];
-}
-
-size_t Image::Width() const
-{
-    return width;
-}
-
-size_t Image::Height() const
-{
-    return height;
-}

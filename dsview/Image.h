@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <vector>
 #include <cstddef>
+#include <cassert>
 
 #include "uint128_t.h"
 
@@ -20,10 +21,14 @@ class Image
 {
     public:
         Image(size_t _height, size_t _width);
-        Color& operator() (size_t y, size_t x);
+        Color& operator() (size_t y, size_t x) {
+            assert(y < height);
+            assert(x < width);
+            return pixels[width * y + x];
+        }
 
-        size_t Width() const;
-        size_t Height() const;
+        size_t Width() const { return width; };
+        size_t Height() const { return height; };
 
     private:
         std::vector<Color> pixels;
