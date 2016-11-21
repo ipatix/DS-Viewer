@@ -91,10 +91,22 @@ bool MediaViewer::UpdateVideo(bool blank)
     src.x = 0;
     src.y = 0;
     //float scaling_factor = 1.f;
-    dest.w = int(VISIBLE_X) * win_h / (int(VISIBLE_Y) * 2);
-    dest.h = win_h;
-    dest.x = win_w / 2 - int(dest.w / 2);
-    dest.y = 0;
+	float ds_ratio = float(VISIBLE_X) / float(VISIBLE_Y * 2);
+	float win_ratio = float(win_w) / float(win_h);
+	if (win_ratio > ds_ratio)
+	{
+		dest.w = int(VISIBLE_X) * win_h / (int(VISIBLE_Y) * 2);
+		dest.h = win_h;
+		dest.x = win_w / 2 - int(dest.w / 2);
+		dest.y = 0;
+	}
+	else
+	{
+		dest.w = win_w;
+		dest.h = int(VISIBLE_Y * 2) * win_w / (int(VISIBLE_X));
+		dest.x = 0;
+		dest.y = win_h / 2 - int(dest.h / 2);
+	}
     SDL_RenderCopy(ren, tex, &src, &dest);
     //SDL_RenderCopy(ren, tex, NULL, NULL);
     SDL_RenderPresent(ren);

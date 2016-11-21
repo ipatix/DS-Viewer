@@ -33,7 +33,7 @@ int main(int argc, char **argv)
             running = mv.UpdateVideo(false);
 
 			auto afterTime = chrono::high_resolution_clock::now();
-			cout << "Rendering took: " << chrono::duration_cast<chrono::milliseconds>(afterTime - lastTime).count() << " ms" << endl;
+			//  cout << "Rendering took: " << chrono::duration_cast<chrono::milliseconds>(afterTime - lastTime).count() << " ms" << endl;
 			lastTime = afterTime;
         }
 		receiver.Stop();

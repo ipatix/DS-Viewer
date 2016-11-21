@@ -16,7 +16,11 @@ using namespace std;
 // interface
 
 ICableReceiver::ICableReceiver()
-    : hpf(5.f), rbuf(0x200000, true, true), dbuf(0x10000, rbuf)
+    : rbuf(0x200000, true, true), dbuf(0x10000, rbuf), 
+	leftHPFilter(bq_type_highpass, 10.f / float(AUDIO_SAMPLERATE), 0.707f, 0),
+	rightHPFilter(bq_type_highpass, 10.f / float(AUDIO_SAMPLERATE), 0.707f, 0),
+	leftLPFilter(bq_type_lowpass, 15000.f / float(AUDIO_SAMPLERATE), 0.707f, 0),
+	rightLPFilter(bq_type_lowpass, 15000.f / float(AUDIO_SAMPLERATE), 0.707f, 0)
 {
     shutdown = false;
 }
@@ -67,7 +71,7 @@ void ICableReceiver::Receive(Image& top_screen, Image& bottom_screen, TRingbuffe
                     bottom_screen(row_bot, col_bot++) = fr.pframe.GetColor();
                     if (col_bot >= top_screen.Width())
                     {
-                        col_bot= 0;
+                        col_bot = 0;
                         if (row_bot == top_screen.Height() - 1)
                             row_bot = 0;
                         else 
@@ -79,14 +83,15 @@ void ICableReceiver::Receive(Image& top_screen, Image& bottom_screen, TRingbuffe
             {
                 float l, r;
                 fr.aframe.GetAudio(l, r);
-				
+
+				audio_target_data.push_back(l);
+				audio_target_data.push_back(r);
+
 				if (audio_target_data.size() >= 2400) {
 					cout << "Early breaking...\n";
 					cout << "Audio count: " << audio_target_data.size() / 2 << endl;
 					break;
 				}
-                audio_target_data.push_back(l);
-                audio_target_data.push_back(r);
             }
             dbuf.Take((uint8_t *)&fr, sizeof(fr));
         }
@@ -102,7 +107,12 @@ void ICableReceiver::Receive(Image& top_screen, Image& bottom_screen, TRingbuffe
     }
 	if (bad_count > 0)
 		cout << "Bad count: " << bad_count << endl;
-	//hpf.process(audio_target_data.data(), audio_target_data.size() / 2);
+
+	for (size_t i = 0; i < audio_target_data.size(); i += 2)
+	{
+		audio_target_data[i] = leftLPFilter.Process(leftHPFilter.Process(audio_target_data[i]));
+		audio_target_data[i+1] = rightLPFilter.Process(rightHPFilter.Process(audio_target_data[i+1]));
+	}
     audio_buffer.Put(audio_target_data.data(), audio_target_data.size());
 }
 
@@ -244,3 +254,15 @@ void DSReciever::receiverThreadHandler(TRingbuffer<uint8_t>* rbuf, volatile bool
 	*is_shutdown = true;
 	cout << "Shutdown!" << endl;
 }
+
+
+
+
+
+
+
+
+
+
+
+

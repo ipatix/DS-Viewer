@@ -8,7 +8,7 @@
 #include "Image.h"
 #include "ftd2xx_wrap.h"
 #include "Config.h"
-#include "HighPass.h"
+#include "BiQuad.h"
 
 class ICableReceiver
 {
@@ -18,10 +18,13 @@ class ICableReceiver
 		void Stop();
 		bool HasStopped() const;
     protected:
-		HighPass<2> hpf;
         std::vector<float> audio_target_data;
         TRingbuffer<uint8_t> rbuf;
 		Buffer<uint8_t> dbuf;
+		BiQuad leftHPFilter;
+		BiQuad rightHPFilter;
+		BiQuad leftLPFilter;
+		BiQuad rightLPFilter;
         volatile bool shutdown;
 		volatile bool hasStopped;
 };

@@ -45,6 +45,9 @@
     <ClCompile Include="ftd2xx_wrap.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="BiQuad.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CableReceiver.h">
@@ -83,7 +86,7 @@
     <ClInclude Include="ftd2xx_wrap.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="HighPass.h">
+    <ClInclude Include="BiQuad.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
