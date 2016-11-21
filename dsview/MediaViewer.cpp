@@ -130,7 +130,7 @@ void MediaViewer::clearTexture()
     }
     SDL_LockTexture(tex, NULL, &pixels, &pitch);
     uint32_t *upixels = (uint32_t *)pixels;
-    size_t offset = size_t(pitch / sizeof(uint32_t)) * VISIBLE_Y * 2;
+    size_t offset = size_t(size_t(pitch) / sizeof(uint32_t)) * VISIBLE_Y * 2;
     std::fill(upixels, upixels + offset, 0xFF00FF);
     SDL_UnlockTexture(tex);
 }
@@ -176,7 +176,7 @@ void MediaViewer::toggleFullscreen()
 void MediaViewer::audioCallback(void *userdata, uint8_t *stream, int len)
 {
     float *buffer = (float *)stream;
-    size_t frames = len / sizeof(float) / 2;
+    size_t frames = size_t(len) / sizeof(float) / 2;
     TRingbuffer<float> *buf = (TRingbuffer<float> *)userdata;
     buf->Take(buffer, frames * 2);
 	if (MediaViewer::IsMuted())
