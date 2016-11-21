@@ -118,7 +118,7 @@ void MediaViewer::clearTexture()
     }
     SDL_LockTexture(tex, NULL, &pixels, &pitch);
     uint32_t *upixels = (uint32_t *)pixels;
-    size_t offset = size_t(pitch / sizeof(uint32_t)) * top.Height() * 2;
+    size_t offset = size_t(pitch / sizeof(uint32_t)) * VISIBLE_Y * 2;
     std::fill(upixels, upixels + offset, 0xFF00FF);
     SDL_UnlockTexture(tex);
 }
