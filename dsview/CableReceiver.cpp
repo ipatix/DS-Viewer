@@ -240,14 +240,21 @@ void DSReciever::receiverThreadHandler(TRingbuffer<uint8_t>* rbuf, volatile bool
 {
 	cout << "Started Thread..." << endl;
 	std::vector<uint8_t> cable_buf(0x10000, 0);
-	while (!*shutdown)
+	try
 	{
-		//cout << "Reading Block..." << endl;
-		size_t read = usb_device->Read(cable_buf.data(), cable_buf.size());
-		std::fill(cable_buf.begin() + read, cable_buf.end(), 0);
-		if (read != cable_buf.size())
-			cerr << "Warning: USB Read Data timeout" << endl;
-		rbuf->Put(cable_buf.data(), cable_buf.size());
+		while (!*shutdown)
+		{
+			//cout << "Reading Block..." << endl;
+			size_t read = usb_device->Read(cable_buf.data(), cable_buf.size());
+			std::fill(cable_buf.begin() + read, cable_buf.end(), 0);
+			if (read != cable_buf.size())
+				cerr << "Warning: USB Read Data timeout" << endl;
+			rbuf->Put(cable_buf.data(), cable_buf.size());
+		}
+	} 
+	catch (const exception& e)
+	{
+		cerr << "An error occured while running: " << e.what() << endl;
 	}
 	cout << "Closing USB connection..." << endl;
 	usb_device->Close();

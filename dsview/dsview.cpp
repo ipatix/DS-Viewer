@@ -27,7 +27,7 @@ int main(int argc, char **argv)
 
 		bool running = true;
 		auto lastTime = chrono::high_resolution_clock::now();
-        while (running)
+        while (running && !receiver.HasStopped())
         {
             receiver.Receive(top, bot, mv.GetAudioBuffer());
             running = mv.UpdateVideo(false);
