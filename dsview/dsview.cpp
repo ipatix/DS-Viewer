@@ -21,28 +21,22 @@ int main(int argc, char **argv)
     {
         Image top(VIDEO_HEIGHT, VIDEO_WIDTH);
         Image bot(VIDEO_HEIGHT, VIDEO_WIDTH);
-        MediaViewer mv(top, bot);
+		boost::lockfree::spsc_queue<float> audio_buffer(AUDIO_BUF_SIZE * 2);
+        MediaViewer mv(top, bot, audio_buffer);
         //DummyReceiver receiver;
-		DSReciever receiver;
+		DSReciever receiver(top, bot, audio_buffer);
 
 		bool running = true;
 		auto lastTime = chrono::high_resolution_clock::now();
-        while (running && !receiver.HasStopped())
+        while (running)
         {
-            receiver.Receive(top, bot, mv.GetAudioBuffer());
+            receiver.Receive();
             running = mv.UpdateVideo(false);
 
 			auto afterTime = chrono::high_resolution_clock::now();
 			//  cout << "Rendering took: " << chrono::duration_cast<chrono::milliseconds>(afterTime - lastTime).count() << " ms" << endl;
 			lastTime = afterTime;
         }
-		receiver.Stop();
-		while (true)
-		{
-			//receiver.Receive(top, bot, mv.GetAudioBuffer());
-			if (receiver.HasStopped())
-				break;
-		}
     }
     catch (const std::exception& e)
     {

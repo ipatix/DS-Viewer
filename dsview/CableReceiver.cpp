@@ -15,31 +15,33 @@ using namespace std;
 
 // interface
 
-ICableReceiver::ICableReceiver()
-    : rbuf(0x200000, true, true), dbuf(0x10000, rbuf), 
+ICableReceiver::ICableReceiver(Image& _top_screen, Image& _bot_screen, boost::lockfree::spsc_queue<float>& _audio_buffer)
+    : top_screen(_top_screen), bot_screen(_bot_screen), audio_buffer(_audio_buffer),
+	data_stream(0x20000),
 	leftHPFilter(bq_type_highpass, 10.f / float(AUDIO_SAMPLERATE), 0.707f, 0),
 	rightHPFilter(bq_type_highpass, 10.f / float(AUDIO_SAMPLERATE), 0.707f, 0),
 	leftLPFilter(bq_type_lowpass, 15000.f / float(AUDIO_SAMPLERATE), 0.707f, 0),
-	rightLPFilter(bq_type_lowpass, 15000.f / float(AUDIO_SAMPLERATE), 0.707f, 0)
+	rightLPFilter(bq_type_lowpass, 15000.f / float(AUDIO_SAMPLERATE), 0.707f, 0) 
 {
-    shutdown = false;
 }
 
-void ICableReceiver::Receive(Image& top_screen, Image& bottom_screen, TRingbuffer<float>& audio_buffer)
+void ICableReceiver::Receive()
 {
     uint32_t col_top = 0, row_top = 0;
     uint32_t col_bot = 0, row_bot = 0;
     audio_target_data.clear();
-    if (hasStopped)
-        return;
-    assert(top_screen.Width() == bottom_screen.Width());
-    assert(top_screen.Height() == bottom_screen.Height());
+    assert(top_screen.Width() == bot_screen.Width());
+    assert(top_screen.Height() == bot_screen.Height());
 
 
     MediaFrame fr;
 	uint8_t *fr_ptr = (uint8_t *)&fr;
     static_assert(sizeof(MediaFrame) == 4, "Media Frames must be 4 byte big");
-    dbuf.Take((uint8_t *)&fr, sizeof(fr));
+
+	while (data_stream.DataCount() < sizeof(fr)) {
+		fetchData();
+	}
+	data_stream.Take((uint8_t *)&fr, sizeof(fr));
 
 	int bad_count = 0;
 
@@ -68,7 +70,7 @@ void ICableReceiver::Receive(Image& top_screen, Image& bottom_screen, TRingbuffe
                 }
                 else
                 {
-                    bottom_screen(row_bot, col_bot++) = fr.pframe.GetColor();
+                    bot_screen(row_bot, col_bot++) = fr.pframe.GetColor();
                     if (col_bot >= top_screen.Width())
                     {
                         col_bot = 0;
@@ -93,7 +95,10 @@ void ICableReceiver::Receive(Image& top_screen, Image& bottom_screen, TRingbuffe
 					break;
 				}
             }
-            dbuf.Take((uint8_t *)&fr, sizeof(fr));
+			while (data_stream.DataCount() < sizeof(fr)) {
+				fetchData();
+			}
+            data_stream.Take((uint8_t *)&fr, sizeof(fr));
         }
         else
         {
@@ -101,7 +106,10 @@ void ICableReceiver::Receive(Image& top_screen, Image& bottom_screen, TRingbuffe
             fr_ptr[0] = fr_ptr[1];
 			fr_ptr[1] = fr_ptr[2];
 			fr_ptr[2] = fr_ptr[3];
-            dbuf.Take(fr_ptr + 3, 1);
+			while (data_stream.DataCount() < sizeof(fr_ptr[3])) {
+				fetchData();
+			}
+            data_stream.Take(fr_ptr + 3, 1);
 			bad_count++;
         }
     }
@@ -113,107 +121,15 @@ void ICableReceiver::Receive(Image& top_screen, Image& bottom_screen, TRingbuffe
 		audio_target_data[i] = leftLPFilter.Process(leftHPFilter.Process(audio_target_data[i]));
 		audio_target_data[i+1] = rightLPFilter.Process(rightHPFilter.Process(audio_target_data[i+1]));
 	}
-    audio_buffer.Put(audio_target_data.data(), audio_target_data.size());
-}
-
-void ICableReceiver::Stop()
-{
-    shutdown = true;
-}
-
-bool ICableReceiver::HasStopped() const
-{
-    return hasStopped;
-}
-
-// dummy receiver
-
-DummyReceiver::DummyReceiver()
-    : receiver_thread(DummyReceiver::receiverThreadHandler, &rbuf, &shutdown, &hasStopped)
-{
-    hasStopped = false;
-}
-
-DummyReceiver::~DummyReceiver()
-{
-    receiver_thread.join();
-}
-
-void DummyReceiver::receiverThreadHandler(TRingbuffer<uint8_t> *rbuf, volatile bool *shutdown, volatile bool *is_shutdown)
-{
-    std::cout << "thread started" << endl;
-    float p_left = 0.f, p_right = 0.f;
-    vector<uint8_t> v_data;
-    vector<uint8_t> a_data;
-    while (!*shutdown)
-    {
-        v_data.clear();
-        a_data.clear();
-
-
-        // send video
-        for (size_t i = 0; i < VIDEO_HEIGHT; i++)
-        {
-            for (size_t j = 0; j < VIDEO_WIDTH; j++)
-            {
-                // very basic color fade
-                Color c;
-                if ((i & 1) | (j & 1))
-                    c = Color(0, 0, 0);
-                else
-                    c = Color(255, 255, 255);
-                v_data.push_back(0b11000000);
-                v_data.push_back(c.r);
-                v_data.push_back(c.g);
-                v_data.push_back(c.b);
-                v_data.push_back(0b11000010);
-                v_data.push_back(c.r);
-                v_data.push_back(c.g);
-                v_data.push_back(c.b);
-            }
-        }
-
-        //printf("Putting video data bytes: %llu\n", v_data.size());
-        rbuf->Put(v_data.data(), v_data.size());
-
-        // send vsync
-        uint8_t p_begin[4] = { 0b11000001,0x00,0x00,0x00 };
-        rbuf->Put(p_begin, sizeof(p_begin));
-
-        // send audio
-        for (size_t i = 0; i < 800; i++)
-        {
-            uint32_t l = uint32_t(int((p_left += 0.01f) * float(0x800) * 0.03f) + 0x800);
-            uint32_t r = uint32_t(int((p_right += 0.01005f) * float(0x800) * 0.03f) + 0x800);
-            if (p_left > 1.f) p_left -= 2.f;
-            if (p_right > 1.f) p_right -= 2.f;
-            a_data.push_back(0b10000000);
-            a_data.push_back(uint8_t(l >> 4));
-            a_data.push_back(uint8_t(l << 4) | uint8_t(r >> 8));
-            a_data.push_back(uint8_t(r));
-        }
-
-        //printf("Putting audio data bytes: %llu\n", a_data.size());
-        rbuf->Put(a_data.data(), a_data.size());
-
-        // send some random zero bytes
-
-        //uint8_t zeroes[400];
-        //for (size_t i = 0; i < sizeof(zeroes); i++)
-        //    zeroes[i] = uint8_t(0);
-
-        //printf("Putting zeroes: %llu\n", sizeof(zeroes));
-        //rbuf->Put(zeroes, sizeof(zeroes));
-    }
-    *is_shutdown = true;
-    cout << "Thread stopped" << endl;
+    audio_buffer.push(audio_target_data.data(), audio_target_data.size());
 }
 
 /*
  * DSReceiver
  */
 
-DSReciever::DSReciever()
+DSReciever::DSReciever(Image& _top_screen, Image& _bot_screen, boost::lockfree::spsc_queue<float>& _audio_buffer)
+	: ICableReceiver::ICableReceiver(_top_screen, _bot_screen, _audio_buffer)
 {
 	usb_device = new Ftd2xxDevice();
 	if ((usb_device->GetDeviceInfoList().at(0).Flags & 2) == 0)
@@ -223,45 +139,21 @@ DSReciever::DSReciever()
 	usb_device->SetUSBParameters(0x10000, 0x10000);
 	usb_device->SetFlowControl(FT_FLOW_RTS_CTS, 0, 0);
 	usb_device->Purge(FT_PURGE_RX | FT_PURGE_TX);
-	usb_device->SetTimeouts(1000, 1000);
-	receiver_thread = new std::thread(DSReciever::receiverThreadHandler, &rbuf, &shutdown, &hasStopped, usb_device);
-	hasStopped = false;
+	usb_device->SetTimeouts(50, 50);
 }
 
 DSReciever::~DSReciever()
 {
-	receiver_thread->join();
-	delete usb_device;
-	delete receiver_thread;
-}
-
-void DSReciever::receiverThreadHandler(TRingbuffer<uint8_t>* rbuf, volatile bool *shutdown, volatile bool *is_shutdown,
-	Ftd2xxDevice *usb_device)
-{
-	cout << "Started Thread..." << endl;
-	std::vector<uint8_t> cable_buf(0x10000, 0);
-	try
-	{
-		while (!*shutdown)
-		{
-			//cout << "Reading Block..." << endl;
-			size_t read = usb_device->Read(cable_buf.data(), cable_buf.size());
-			std::fill(cable_buf.begin() + long(read), cable_buf.end(), 0);
-			if (read != cable_buf.size())
-				cerr << "Warning: USB Read Data timeout" << endl;
-			rbuf->Put(cable_buf.data(), cable_buf.size());
-		}
-	} 
-	catch (const exception& e)
-	{
-		cerr << "An error occured while running: " << e.what() << endl;
-	}
-	cout << "Closing USB connection..." << endl;
 	usb_device->Close();
-	*is_shutdown = true;
-	cout << "Shutdown!" << endl;
+	delete usb_device;
 }
 
+void DSReciever::fetchData()
+{
+	uint8_t buffer[0x10000];
+	size_t read = usb_device->Read(buffer, sizeof(buffer));
+	data_stream.Put(buffer, read);
+}
 
 
 

@@ -152,19 +152,16 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="BiQuad.cpp" />
-    <ClCompile Include="Buffer.cpp" />
     <ClCompile Include="CableReceiver.cpp" />
     <ClCompile Include="dsview.cpp" />
     <ClCompile Include="ftd2xx_wrap.cpp" />
     <ClCompile Include="Image.cpp" />
     <ClCompile Include="MediaViewer.cpp" />
-    <ClCompile Include="TRingbuffer.cpp" />
     <ClCompile Include="uint128_t.cpp" />
     <ClCompile Include="Xcept.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BiQuad.h" />
-    <ClInclude Include="Buffer.h" />
     <ClInclude Include="CableReceiver.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="ftd2xx.h" />
@@ -172,7 +169,7 @@
     <ClInclude Include="Image.h" />
     <ClInclude Include="MediaFrame.h" />
     <ClInclude Include="MediaViewer.h" />
-    <ClInclude Include="TRingbuffer.h" />
+    <ClInclude Include="Ringbuffer.h" />
     <ClInclude Include="uint128_t.h" />
     <ClInclude Include="Util.h" />
     <ClInclude Include="Xcept.h" />

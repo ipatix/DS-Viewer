@@ -8,8 +8,8 @@
 
 bool MediaViewer::mute = false;
 
-MediaViewer::MediaViewer(Image& _top, Image& _bottom)
-    : fullscreen(false), top(_top), bottom(_bottom), audiobuf(AUDIO_BUF_SIZE, false, false)
+MediaViewer::MediaViewer(Image& _top, Image& _bottom, boost::lockfree::spsc_queue<float>& _audio_buffer)
+    : fullscreen(false), top(_top), bottom(_bottom), audio_buffer(_audio_buffer)
 {
     // Video
     assert(top.Height() == bottom.Height());
@@ -33,7 +33,7 @@ MediaViewer::MediaViewer(Image& _top, Image& _bottom)
     spec.channels = 2;
     spec.samples = AUDIO_BUF_SIZE / 4;
     spec.callback = audioCallback;
-    spec.userdata = &audiobuf;
+    spec.userdata = &audio_buffer;
     if (!(audioDeviceID = SDL_OpenAudioDevice(NULL, 0, &spec, NULL, 0)))
         throw Xcept("SDL_OpenAudioDevice Error: %s", SDL_GetError());
     SDL_PauseAudioDevice(audioDeviceID, 0);
@@ -114,11 +114,6 @@ bool MediaViewer::UpdateVideo(bool blank)
     return true;
 }
 
-TRingbuffer<float>& MediaViewer::GetAudioBuffer()
-{
-    return audiobuf;
-}
-
 void MediaViewer::clearTexture()
 {
     void *pixels;
@@ -177,8 +172,10 @@ void MediaViewer::audioCallback(void *userdata, uint8_t *stream, int len)
 {
     float *buffer = (float *)stream;
     size_t frames = size_t(len) / sizeof(float) / 2;
-    TRingbuffer<float> *buf = (TRingbuffer<float> *)userdata;
-    buf->Take(buffer, frames * 2);
+    boost::lockfree::spsc_queue<float> *buf = (boost::lockfree::spsc_queue<float> *)userdata;
+
+    size_t took = buf->pop(buffer, frames * 2);
+	std::fill(buffer + took, buffer + (frames * 2), 0.f);
 	if (MediaViewer::IsMuted())
 		for (size_t i = 0; i < frames * 2; i++)
 			buffer[i] = 0.f;

@@ -5,17 +5,17 @@
 #include <SDL2/SDL.h>
 #endif
 
+#include <boost/lockfree/spsc_queue.hpp>
+
 #include "Image.h"
 #include "Xcept.h"
-#include "TRingbuffer.h"
 
 class MediaViewer
 {
     public:
-        MediaViewer(Image& _top, Image& _bottom);
+        MediaViewer(Image& _top, Image& _bottom, boost::lockfree::spsc_queue<float>& _audio_buffer);
         ~MediaViewer();
         bool UpdateVideo(bool blank);
-        TRingbuffer<float>& GetAudioBuffer();
 		static bool IsMuted() { return mute; }
     private:
         void clearTexture();
@@ -35,7 +35,8 @@ class MediaViewer
 
         Image& top;
         Image& bottom;
+
+		boost::lockfree::spsc_queue<float>& audio_buffer;
         
         SDL_AudioDeviceID audioDeviceID;
-        TRingbuffer<float> audiobuf;
 };

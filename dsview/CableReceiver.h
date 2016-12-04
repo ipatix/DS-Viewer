@@ -2,9 +2,9 @@
 
 #include <cstdint>
 #include <thread>
+#include <boost/lockfree/spsc_queue.hpp>
 
-#include "TRingbuffer.h"
-#include "Buffer.h"
+#include "Ringbuffer.h"
 #include "Image.h"
 #include "ftd2xx_wrap.h"
 #include "Config.h"
@@ -13,41 +13,29 @@
 class ICableReceiver
 {
     public:
-        ICableReceiver();
-        void Receive(Image& top_screen, Image& bottom_screen, TRingbuffer<float>& audio_buffer);
-		void Stop();
-		bool HasStopped() const;
+        ICableReceiver(Image& _top_screen, Image& _bot_screen, boost::lockfree::spsc_queue<float>& _audio_buffer);
+        void Receive();
     protected:
+		virtual void fetchData() = 0;
+
         std::vector<float> audio_target_data;
-        TRingbuffer<uint8_t> rbuf;
-		Buffer<uint8_t> dbuf;
+		Image& top_screen;
+		Image& bot_screen;
+		boost::lockfree::spsc_queue<float>& audio_buffer;
+		Ringbuffer<uint8_t> data_stream;
 		BiQuad leftHPFilter;
 		BiQuad rightHPFilter;
 		BiQuad leftLPFilter;
 		BiQuad rightLPFilter;
-        volatile bool shutdown;
-		volatile bool hasStopped;
-};
-
-class DummyReceiver : public ICableReceiver
-{
-    public:
-        DummyReceiver();
-		~DummyReceiver();
-    protected:
-        static void receiverThreadHandler(TRingbuffer<uint8_t> *rbuf, volatile bool *shutdown, volatile bool *is_shutdown);
-        std::thread receiver_thread;
 };
 
 class DSReciever : public ICableReceiver
 {
 public:
-	DSReciever();
+	DSReciever(Image& _top_screen, Image& _bot_screen, boost::lockfree::spsc_queue<float>& _audio_buffer);
 	~DSReciever();
 protected:
-	static void receiverThreadHandler(TRingbuffer<uint8_t> *rbuf, volatile bool *shutdown, volatile bool *is_shutdown,
-		Ftd2xxDevice *usb_device);
-	std::thread *receiver_thread;
-	Ftd2xxDevice *usb_device;
+	void fetchData() override;
 
+	Ftd2xxDevice *usb_device;
 };

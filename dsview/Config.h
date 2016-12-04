@@ -1,7 +1,8 @@
 #pragma once
 
 #define AUDIO_SAMPLERATE 48000
-#define AUDIO_BUF_SIZE 8192
+#define AUDIO_BUF_SIZE 2048
+#define AUDIO_BUF_SIZE_STEREO AUDIO_BUF_SIZE * 2
 
 
 #define VISIBLE_X 256

@@ -36,12 +36,6 @@
     <ClCompile Include="Xcept.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="Buffer.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="TRingbuffer.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
     <ClCompile Include="ftd2xx_wrap.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
@@ -74,12 +68,6 @@
     <ClInclude Include="MediaFrame.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="Buffer.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
-    <ClInclude Include="TRingbuffer.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="ftd2xx.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
@@ -87,6 +75,9 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="BiQuad.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="Ringbuffer.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>
