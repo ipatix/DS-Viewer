@@ -6,9 +6,6 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "dsview", "dsview\dsview.vcxproj", "{50D9C348-1B89-4218-9059-AD21AA79562A}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{86EFF543-946B-41B8-97A5-4D2F9CF7E062}"
-	ProjectSection(SolutionItems) = preProject
-		Performance3.psess = Performance3.psess
-	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

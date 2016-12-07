@@ -22,7 +22,7 @@ MediaViewer::MediaViewer(Image& _top, Image& _bottom, boost::lockfree::spsc_queu
         throw Xcept("SDL_CreateRenderer Error: %s", SDL_GetError());
     if (SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "2") == SDL_FALSE)
         throw Xcept("SDL_SetHint Error: %s", SDL_GetError());
-    if (!(tex = SDL_CreateTexture(ren, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, VISIBLE_X, VISIBLE_Y * 2)))
+    if (!(tex = SDL_CreateTexture(ren, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, VISIBLE_X + 2, VISIBLE_Y * 2 + 2)))
         throw Xcept("SDL_CreateTexture Error: %s", SDL_GetError());
     SDL_GetWindowSize(win, &win_w, &win_h);
     UpdateVideo(true);
@@ -88,8 +88,8 @@ bool MediaViewer::UpdateVideo(bool blank)
     SDL_Rect src, dest;
     src.w = int(VISIBLE_X);
     src.h = int(VISIBLE_Y) * 2;
-    src.x = 0;
-    src.y = 0;
+    src.x = 1;
+    src.y = 1;
     //float scaling_factor = 1.f;
 	float ds_ratio = float(VISIBLE_X) / float(VISIBLE_Y * 2);
 	float win_ratio = float(win_w) / float(win_h);
@@ -125,8 +125,8 @@ void MediaViewer::clearTexture()
     }
     SDL_LockTexture(tex, NULL, &pixels, &pitch);
     uint32_t *upixels = (uint32_t *)pixels;
-    size_t offset = size_t(size_t(pitch) / sizeof(uint32_t)) * VISIBLE_Y * 2;
-    std::fill(upixels, upixels + offset, 0xFF00FF);
+    size_t offset = size_t(size_t(pitch) / sizeof(uint32_t)) * (VISIBLE_Y * 2 + 2);
+    std::fill(upixels, upixels + offset, uint32_t(0xFF00FF));
     SDL_UnlockTexture(tex);
 }
 
@@ -136,8 +136,18 @@ void MediaViewer::imageTexture()
     int pitch;
     SDL_LockTexture(tex, NULL, &pixels, &pitch);
     uint8_t *upixels = (uint8_t *)pixels;
+	for (int i = 0; i < (pitch / sizeof(uint32_t)); i++)
+	{
+		if (i < VISIBLE_X + 2) {
+			*upixels++ = 0; *upixels++ = 0; *upixels++ = 0; *upixels++ = 0;
+		} 
+		else {
+			upixels += 4;
+		}
+	}
     for (size_t i = START_Y; i < START_Y + VISIBLE_Y; i++)
     {
+		*upixels++ = 0; *upixels++ = 0;	*upixels++ = 0;	*upixels++ = 0;
         for (size_t j = START_X; j < START_X + VISIBLE_X; j++)
         {
             *upixels++ = 0xFF;
@@ -145,10 +155,12 @@ void MediaViewer::imageTexture()
             *upixels++ = top(i, j).g;
             *upixels++ = top(i, j).r;
         }
-        upixels += (size_t(pitch) / sizeof(uint32_t)) - VISIBLE_X;
+		*upixels++ = 0; *upixels++ = 0;	*upixels++ = 0;	*upixels++ = 0;
+        upixels += (size_t(pitch) / sizeof(uint32_t)) - (VISIBLE_X + 2);
     }
     for (size_t i = START_Y; i < START_Y + VISIBLE_Y; i++)
     {
+		*upixels++ = 0; *upixels++ = 0;	*upixels++ = 0;	*upixels++ = 0;
         for (size_t j = START_X; j < START_X + VISIBLE_X; j++)
         {
             *upixels++ = 0xFF;
@@ -156,8 +168,18 @@ void MediaViewer::imageTexture()
             *upixels++ = bottom(i, j).g;
             *upixels++ = bottom(i, j).r;
         }
-        upixels += (size_t(pitch) / sizeof(uint32_t)) - VISIBLE_X;
+		*upixels++ = 0; *upixels++ = 0;	*upixels++ = 0;	*upixels++ = 0;
+        upixels += (size_t(pitch) / sizeof(uint32_t)) - (VISIBLE_X + 2);
     }
+	for (int i = 0; i < (pitch / sizeof(uint32_t)); i++)
+	{
+		if (i < VISIBLE_X + 2) {
+			*upixels++ = 0; *upixels++ = 0; *upixels++ = 0; *upixels++ = 0;
+		}
+		else {
+			upixels += 4;
+		}
+	}
     SDL_UnlockTexture(tex);
 }
 
