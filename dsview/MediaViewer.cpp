@@ -58,6 +58,13 @@ bool MediaViewer::UpdateVideo(bool blank)
             case SDL_WINDOWEVENT:
                 switch (sev.window.event)
                 {
+                    case SDL_WINDOWEVENT_RESTORED:
+                        SDL_RestoreWindow(win);
+                        SDL_SetWindowSize(win, win_w, win_h);
+                        SDL_RestoreWindow(win);
+                        //SDL_MaximizeWindow(win);
+                        //SDL_GetWindowSize(win, &win_w, &win_h);
+                        break;
                     case SDL_WINDOWEVENT_RESIZED:
                     case SDL_WINDOWEVENT_SIZE_CHANGED:
                         win_w = sev.window.data1;
