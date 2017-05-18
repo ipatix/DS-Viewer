@@ -84,7 +84,7 @@ void ICableReceiver::Receive()
             else
             {
                 float l, r;
-                fr.aframe.GetAudio(l, r);
+                fr.aframe.GetAudio(r, l);
 
 				audio_target_data.push_back(l);
 				audio_target_data.push_back(r);
@@ -118,8 +118,12 @@ void ICableReceiver::Receive()
 
 	for (size_t i = 0; i < audio_target_data.size(); i += 2)
 	{
+        /*
 		audio_target_data[i] = leftLPFilter.Process(leftHPFilter.Process(audio_target_data[i]));
 		audio_target_data[i+1] = rightLPFilter.Process(rightHPFilter.Process(audio_target_data[i+1]));
+        */
+        audio_target_data[i] = leftLPFilter.Process(audio_target_data[i]);
+        audio_target_data[i + 1] = rightLPFilter.Process(audio_target_data[i + 1]);
 	}
     audio_buffer.push(audio_target_data.data(), audio_target_data.size());
 }
