@@ -131,27 +131,31 @@ void ICableReceiver::Receive()
 DSReciever::DSReciever(Image& _top_screen, Image& _bot_screen, boost::lockfree::spsc_queue<float>& _audio_buffer)
 	: ICableReceiver::ICableReceiver(_top_screen, _bot_screen, _audio_buffer)
 {
-	usb_device = new Ftd2xxDevice();
-	if ((usb_device->GetDeviceInfoList().at(0).Flags & 2) == 0)
-		throw Xcept("ERROR: FT232 running in USB 1.1 mode, not in USB 2.0 mode");
-	usb_device->SetBitMode(0xFF, 0x40);
-	usb_device->SetLatencyTimer(2);
-	usb_device->SetUSBParameters(0x10000, 0x10000);
-	usb_device->SetFlowControl(FT_FLOW_RTS_CTS, 0, 0);
-	usb_device->Purge(FT_PURGE_RX | FT_PURGE_TX);
-	usb_device->SetTimeouts(50, 50);
+	usb_device = new ftdi_device();
+	//if ((usb_device->GetDeviceInfoList().at(0).Flags & 2) == 0)
+	//    throw Xcept("ERROR: FT232 running in USB 1.1 mode, not in USB 2.0 mode");
+    usb_device->usb_open(0x0403, 0x6014);
+	usb_device->set_bitmode(0xFF, BITMODE_RESET);
+	usb_device->set_bitmode(0xFF, BITMODE_SYNCFF);
+	usb_device->set_latency_timer(2);
+    usb_device->read_data_set_chunksize(0x10000);
+    usb_device->write_data_set_chunksize(0x10000);
+	usb_device->set_flowctrl(SIO_RTS_CTS_HS);
+    usb_device->usb_purge_buffers();
+    usb_device->get_context()->usb_read_timeout = 50;
+    usb_device->get_context()->usb_write_timeout = 50;
 }
 
 DSReciever::~DSReciever()
 {
-	usb_device->Close();
+	usb_device->usb_close();
 	delete usb_device;
 }
 
 void DSReciever::fetchData()
 {
 	uint8_t buffer[0x10000];
-	size_t read = usb_device->Read(buffer, sizeof(buffer));
+	size_t read = usb_device->read_data(buffer, sizeof(buffer));
 	data_stream.Put(buffer, read);
 }
 

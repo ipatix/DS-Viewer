@@ -6,9 +6,9 @@
 
 #include "Ringbuffer.h"
 #include "Image.h"
-#include "ftd2xx_wrap.h"
 #include "Config.h"
 #include "BiQuad.h"
+#include "ftdipp.h"
 
 class ICableReceiver
 {
@@ -37,5 +37,5 @@ public:
 protected:
 	void fetchData() override;
 
-	Ftd2xxDevice *usb_device;
+	ftdi_device *usb_device;
 };
