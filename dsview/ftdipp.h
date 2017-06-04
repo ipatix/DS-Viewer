@@ -1,6 +1,6 @@
 #include "Xcept.h"
 
-#include <ftdi.h>
+#include <libftdi1/ftdi.h>
 
 class ftdi_device {
     public:
