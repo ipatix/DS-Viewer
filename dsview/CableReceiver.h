@@ -36,6 +36,11 @@ public:
 	~DSReciever();
 protected:
 	void fetchData() override;
+    static void readerThread(
+            boost::lockfree::spsc_queue<uint8_t> *readBuf, 
+            volatile bool *terminate);
 
-	ftdi_device *usb_device;
+    bool terminate;
+    boost::lockfree::spsc_queue<uint8_t> readBuf;
+    std::thread reader;
 };
