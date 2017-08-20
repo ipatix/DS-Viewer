@@ -8,3 +8,6 @@ For Linux users use the libftdi branch. It uses a slightly more up to date codeb
 Note that the performance will heavily depend on the scheduling of the USB thread on Linux (I don't understand enough libusb to make this nicer) and will require a nice of -20 to not loose data packets.
 
 Dependencies are boost and libsdl2
+
+A demo video can be found here:
+https://www.youtube.com/watch?v=MxQT0u2nWGM
