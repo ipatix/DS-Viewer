@@ -84,7 +84,7 @@ void ICableReceiver::Receive()
                 }
             } else {
                 float l, r;
-                fr.aframe.GetAudio(l, r);
+                fr.aframe.GetAudio(r, l);
 
                 audio_target_data.push_back(l);
                 audio_target_data.push_back(r);
@@ -112,12 +112,13 @@ void ICableReceiver::Receive()
         }
     }
     if (bad_count > 0)
-        cout << "Bad count: " << bad_count << endl;
+        printf("Bad count: %d\n", bad_count);
 
     for (size_t i = 0; i < audio_target_data.size(); i += 2) {
-        audio_target_data[i] = leftLPFilter.Process(leftHPFilter.Process(audio_target_data[i]));
-        audio_target_data[i + 1] = rightLPFilter.Process(rightHPFilter.Process(audio_target_data[i + 1]));
+        audio_target_data[i] = leftHPFilter.Process(audio_target_data[i]);
+        audio_target_data[i + 1] = rightHPFilter.Process(audio_target_data[i + 1]);
     }
+
     audio_buffer.push(audio_target_data.data(), audio_target_data.size());
 }
 /*
