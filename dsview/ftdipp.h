@@ -1,15 +1,96 @@
 #pragma once
 
+#include "Xcept.h"
+
 #include <string>
 #include <vector>
 #include <cassert>
 #include <cstdint>
 
+#ifdef __unix__
+#include <libftdi1/ftdi.h>
+
+class ftdi_device {
+    private:
+        struct ftdi_context *con;
+    public:
+        ftdi_device() {
+            con = ftdi_new();
+            if (!con)
+                throw Xcept("ftdi_new allocation failed");
+        }
+        ~ftdi_device() {
+            ftdi_free(con);
+        }
+
+        struct ftdi_context *get_context() {
+            return con;
+        }
+
+        // methods
+        void usb_open(int vendor, int product) {
+            if (ftdi_usb_open(con, vendor, product) != 0)
+                throw Xcept("ftdi_usb_open: %s", ftdi_get_error_string(con));
+        }
+
+        void usb_close() {
+            if (ftdi_usb_close(con) != 0)
+                throw Xcept("ftdi_usb_close: %s", ftdi_get_error_string(con));
+        }
+
+        void usb_reset() {
+            if (ftdi_usb_reset(con) != 0)
+                throw Xcept("ftdi_usb_reset: %s", ftdi_get_error_string(con));
+        }
+
+        void usb_purge_buffers() {
+            if (ftdi_usb_purge_buffers(con) != 0)
+                throw Xcept("ftdi_usb_purge_buffers: %s", ftdi_get_error_string(con));
+        }
+
+        void set_bitmode(unsigned char bitmask, unsigned char mode) {
+            if (ftdi_set_bitmode(con, bitmask, mode) != 0)
+                throw Xcept("ftdi_set_bitmode: %s", ftdi_get_error_string(con));
+        }
+
+        void set_latency_timer(unsigned char latency) {
+            if (ftdi_set_latency_timer(con, latency) != 0)
+                throw Xcept("ftdi_set_latency_timer: %s", ftdi_get_error_string(con));
+        }
+
+        void data_set_chunksize(unsigned int read_size, unsigned int write_size) {
+            if (ftdi_read_data_set_chunksize(con, read_size) != 0)
+                throw Xcept("ftdi_read_data_set_chunksize: %s", ftdi_get_error_string(con));
+            if (ftdi_write_data_set_chunksize(con, write_size) != 0)
+                throw Xcept("ftdi_write_data_set_chunksize: %s", ftdi_get_error_string(con));
+        }
+
+        void set_flowctrl(int flowctrl, unsigned char xon, unsigned char xoff) {
+            (void)xon;
+            (void)xoff;
+            if (ftdi_setflowctrl(con, flowctrl) != 0)
+                throw Xcept("ftdi_setflowctrl: %s", ftdi_get_error_string(con));
+        }
+
+        void set_timeouts(int read_timeout, int write_timeout) {
+            con->usb_read_timeout = read_timeout;
+            con->usb_write_timeout = write_timeout;
+        }
+
+        int read_data(unsigned char *buf, int size) {
+            return ftdi_read_data(con, buf, size);
+        }
+
+        int write_data(unsigned char *buf, int size) {
+            return ftdi_write_data(con, buf, size);
+        }
+};
+
+#elif _WIN32
 #include "ftd2xx.h"
 #include "WinTypes.h"
-#include "Xcept.h"
 
-class Ftd2xxDevice
+class ftdi_device
 {
     private:
         static std::string getErrText(FT_STATUS err) {
@@ -75,53 +156,50 @@ class Ftd2xxDevice
     
     public:
         // FT_Open device 0
-        Ftd2xxDevice() {
-            closed = false;
-            FT_STATUS err;
-            if ((err = FT_Open(0, &handle)) != FT_OK)
-                throw Xcept("FT_Open: %s", getErrText(err));
+        ftdi_device() {
+            closed = true;
         }
-        // FT_Open device n
-        Ftd2xxDevice(int deviceIndex) {
-            closed = false;
-            FT_STATUS err;
-            if ((err = FT_Open(deviceIndex, &handle)) != FT_OK)
-                throw Xcept("FT_Open: %s", getErrText(err));
-        }
-        // FT_OpenEx device
-        Ftd2xxDevice(std::string name, DWORD flags) {
-            closed = false;
-            FT_STATUS err;
-            if ((err = FT_OpenEx((void *)name.c_str(), flags, &handle)) != FT_OK)
-                throw Xcept("FT_OpenEx: %s", getErrText(err));
-        }
-        ~Ftd2xxDevice() {
+
+        ~ftdi_device() {
             if (!closed)
                 FT_Close(handle);
         }
 
-        void Close() {
+        void usb_open() {
+            FT_STATUS err;
+            if ((err = FT_Open(0, &handle)) != FT_OK)
+                throw Xcept("FT_Open: %s", getErrText(err));
+            closed = false;
+        }
+
+        void usb_open(int deviceIndex) {
+            FT_STATUS err;
+            if ((err = FT_Open(deviceIndex, &handle)) != FT_OK)
+                throw Xcept("FT_Open: %s", getErrText(err));
+            closed = false;
+        }
+
+        void usb_open(const std::string& name, DWORD flags) {
+            FT_STATUS err;
+            if ((err = FT_OpenEx((void *)name.c_str(), flags, &handle)) != FT_OK)
+                throw Xcept("FT_OpenEx: %s", getErrText(err));
+            closed = false;
+        }
+
+        void usb_close() {
             FT_STATUS err;
             if ((err = FT_Close(handle)) != FT_OK)
                 throw Xcept("FT_Close: %s", getErrText(err));
         }
 
         // FT_GetDeviceInfoList
-        static std::vector<FT_DEVICE_LIST_INFO_NODE>& GetDeviceInfoList() {
-            updateDeviceIndex();
-            devices.resize(numDevices);
-            FT_STATUS err;
-            DWORD _numDevices;
-            if ((err = FT_GetDeviceInfoList(devices.data(), &_numDevices)) != FT_OK)
-                throw Xcept("FT_GetDeviceInfoList: %s", getErrText(err));
-            assert(_numDevices == numDevices);
-            return devices;
-        }
+        // TODO
 
-        // FT_GetDeviceInfoDetail omitted due to function above
+        // FT_GetDeviceInfoDetail
+        // TODO
         
         // FT_Read
-        size_t Read(void *data, size_t bytesToRead) {
+        size_t read_data(unsigned char *data, size_t bytesToRead) {
             DWORD bytes_returned;
             FT_STATUS err;
             if ((err = FT_Read(handle, data, (DWORD)bytesToRead, &bytes_returned)) != FT_OK)
@@ -130,7 +208,7 @@ class Ftd2xxDevice
         }
 
         // FT_Write
-        size_t Write(void *data, size_t bytesToWrite) {
+        size_t write_data(unsigned char *data, size_t bytesToWrite) {
             DWORD bytes_written;
             FT_STATUS err;
             if ((err = FT_Write(handle, data, (DWORD)bytesToWrite, &bytes_written)) != FT_OK)
@@ -160,14 +238,14 @@ class Ftd2xxDevice
         }
 
         // FT_SetTimeouts
-        void SetTimeouts(DWORD readTimeout, DWORD writeTimeout) {
+        void set_timeouts(DWORD readTimeout, DWORD writeTimeout) {
             FT_STATUS err;
             if ((err = FT_SetTimeouts(handle, readTimeout, writeTimeout)) != FT_OK)
                 throw Xcept("FT_SetTimeouts: %s", getErrText(err));
         }
 
         // FT_SetFlowControl
-        void SetFlowControl(uint16_t flowControl, uint8_t xon, uint8_t xoff) {
+        void set_flowctrl(uint16_t flowControl, uint8_t xon, uint8_t xoff) {
             FT_STATUS err;
             if ((err = FT_SetFlowControl(handle, flowControl, xon, xoff)) != FT_OK)
                 throw Xcept("FT_SetFlowControl: %s", getErrText(err));
@@ -280,14 +358,14 @@ class Ftd2xxDevice
         }
 
         // FT_Purge
-        void Purge(DWORD mask) {
+        void usb_purge_buffers(DWORD mask) {
             FT_STATUS err;
             if ((err = FT_Purge(handle, mask)) != FT_OK)
                 throw Xcept("FT_Purge: %s", getErrText(err));
         }
 
         // FT_ResetDevice
-        void ResetDevice() {
+        void usb_reset() {
             FT_STATUS err;
             if ((err = FT_ResetDevice(handle)) != FT_OK)
                 throw Xcept("FT_ResetDevice: %s", getErrText(err));
@@ -315,14 +393,14 @@ class Ftd2xxDevice
         }
 
         // FT_SetLatencyTimer
-        void SetLatencyTimer(uint8_t timer) {
+        void set_latency_timer(uint8_t timer) {
             FT_STATUS err;
             if ((err = FT_SetLatencyTimer(handle, timer)) != FT_OK)
                 throw Xcept("FT_SetLatencyTimer: %s", getErrText(err));
         }
 
         // FT_GetLatencyTimer
-        uint8_t GetLatencyTimer() {
+        uint8_t get_latency_timer() {
             uint8_t ret;
             FT_STATUS err;
             if ((err = FT_GetLatencyTimer(handle, &ret)) != FT_OK)
@@ -331,14 +409,14 @@ class Ftd2xxDevice
         }
 
         // FT_SetBitMode
-        void SetBitMode(uint8_t mask, uint8_t mode) {
+        void set_bitmode(uint8_t mask, uint8_t mode) {
             FT_STATUS err;
             if ((err = FT_SetBitMode(handle, mask, mode)) != FT_OK)
                 throw Xcept("FT_SetBitMode: %s", getErrText(err));
         }
 
         // FT_GetBitMode
-        uint8_t GetBitMode() {
+        uint8_t get_bitmode() {
             uint8_t ret;
             FT_STATUS err;
             if ((err = FT_GetBitMode(handle, &ret)) != FT_OK)
@@ -346,9 +424,11 @@ class Ftd2xxDevice
             return ret;
         }
 
-        void SetUSBParameters(DWORD inTransferSize, DWORD outTransferSize) {
+        void data_set_chunksize(DWORD inTransferSize, DWORD outTransferSize) {
             FT_STATUS err;
             if ((err = FT_SetUSBParameters(handle, inTransferSize, outTransferSize)) != FT_OK)
                 throw Xcept("FT_SetUSBParameters: %s", getErrText(err));
         }
 };
+
+#endif

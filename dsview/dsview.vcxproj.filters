@@ -30,13 +30,7 @@
     <ClCompile Include="MediaViewer.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
-    <ClCompile Include="uint128_t.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
     <ClCompile Include="Xcept.cpp">
-      <Filter>Quelldateien</Filter>
-    </ClCompile>
-    <ClCompile Include="ftd2xx_wrap.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
     <ClCompile Include="BiQuad.cpp">
@@ -56,9 +50,6 @@
     <ClInclude Include="MediaViewer.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="uint128_t.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="Util.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
@@ -71,13 +62,13 @@
     <ClInclude Include="ftd2xx.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
-    <ClInclude Include="ftd2xx_wrap.h">
-      <Filter>Headerdateien</Filter>
-    </ClInclude>
     <ClInclude Include="BiQuad.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="Ringbuffer.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="ftdipp.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

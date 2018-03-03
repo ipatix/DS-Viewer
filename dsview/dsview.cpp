@@ -4,9 +4,9 @@
 
 #include "MediaViewer.h"
 #include "CableReceiver.h"
-#include "uint128_t.h"
 #include "Config.h"
 
+// needed to make the nuget SDL2 version work
 #ifdef _WIN32
 extern "C" { FILE __iob_func[3] = {*stdin, *stdout, *stderr}; }
 #endif

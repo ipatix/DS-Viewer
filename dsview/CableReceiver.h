@@ -2,13 +2,14 @@
 
 #include <cstdint>
 #include <thread>
+#include <atomic>
 #include <boost/lockfree/spsc_queue.hpp>
 
 #include "Ringbuffer.h"
 #include "Image.h"
-#include "ftd2xx_wrap.h"
 #include "Config.h"
 #include "BiQuad.h"
+#include "ftdipp.h"
 
 class ICableReceiver
 {
@@ -29,6 +30,14 @@ class ICableReceiver
 		BiQuad rightLPFilter;
 };
 
+struct ReaderData {
+    ReaderData() : terminate(false), readBuf(0x100000), error(false) {}
+
+    boost::lockfree::spsc_queue<uint8_t> readBuf;
+    std::atomic_bool terminate;
+    std::atomic_bool error;
+};
+
 class DSReciever : public ICableReceiver
 {
 public:
@@ -36,6 +45,8 @@ public:
 	~DSReciever();
 protected:
 	void fetchData() override;
+    static void readerThread(ReaderData *rdata);
 
-	Ftd2xxDevice *usb_device;
+    ReaderData rdata;
+    std::thread reader;
 };
