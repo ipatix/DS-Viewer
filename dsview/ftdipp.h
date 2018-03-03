@@ -72,6 +72,11 @@ class ftdi_device {
                 throw Xcept("ftdi_setflowctrl: %s", ftdi_get_error_string(con));
         }
 
+        void set_timeouts(int read_timeout, int write_timeout) {
+            con->usb_read_timeout = read_timeout;
+            con->usb_write_timeout = write_timeout;
+        }
+
         int read_data(unsigned char *buf, int size) {
             return ftdi_read_data(con, buf, size);
         }
@@ -153,27 +158,32 @@ class ftdi_device
         // FT_Open device 0
         ftdi_device() {
             closed = true;
-            FT_STATUS err;
-            if ((err = FT_Open(0, &handle)) != FT_OK)
-                throw Xcept("FT_Open: %s", getErrText(err));
         }
+
         ~ftdi_device() {
             if (!closed)
                 FT_Close(handle);
         }
 
-        void usb_open(int deviceIndex) {
+        void usb_open() {
+            FT_STATUS err;
+            if ((err = FT_Open(0, &handle)) != FT_OK)
+                throw Xcept("FT_Open: %s", getErrText(err));
             closed = false;
+        }
+
+        void usb_open(int deviceIndex) {
             FT_STATUS err;
             if ((err = FT_Open(deviceIndex, &handle)) != FT_OK)
                 throw Xcept("FT_Open: %s", getErrText(err));
+            closed = false;
         }
 
         void usb_open(const std::string& name, DWORD flags) {
-            closed = false;
             FT_STATUS err;
             if ((err = FT_OpenEx((void *)name.c_str(), flags, &handle)) != FT_OK)
                 throw Xcept("FT_OpenEx: %s", getErrText(err));
+            closed = false;
         }
 
         void usb_close() {
@@ -228,7 +238,7 @@ class ftdi_device
         }
 
         // FT_SetTimeouts
-        void SetTimeouts(DWORD readTimeout, DWORD writeTimeout) {
+        void set_timeouts(DWORD readTimeout, DWORD writeTimeout) {
             FT_STATUS err;
             if ((err = FT_SetTimeouts(handle, readTimeout, writeTimeout)) != FT_OK)
                 throw Xcept("FT_SetTimeouts: %s", getErrText(err));

@@ -47,7 +47,7 @@ void ICableReceiver::Receive()
     MediaFrame fr;
     uint8_t* fr_ptr = (uint8_t*)&fr;
     static_assert(sizeof(MediaFrame) == 4, "Media Frames must be 4 byte big");
-
+    
     while (data_stream.DataCount() < sizeof(fr)) {
         fetchData();
     }
@@ -127,9 +127,7 @@ void ICableReceiver::Receive()
 
 DSReciever::DSReciever(Image& _top_screen, Image& _bot_screen, boost::lockfree::spsc_queue<float>& _audio_buffer)
     : ICableReceiver::ICableReceiver(_top_screen, _bot_screen, _audio_buffer)
-    , terminate(false)
-    , readBuf(0x100000)
-    , reader(readerThread, &readBuf, &terminate)
+    , reader(readerThread, &rdata)
 {
 #ifdef __linux__
     pthread_setname_np(reader.native_handle(), "usb reader");
@@ -138,59 +136,70 @@ DSReciever::DSReciever(Image& _top_screen, Image& _bot_screen, boost::lockfree::
 
 DSReciever::~DSReciever()
 {
-    terminate = true;
-    atomic_thread_fence(std::memory_order_release);
+    rdata.terminate.store(true);
     reader.join();
 }
 
 void DSReciever::fetchData()
 {
+    if (rdata.error.load()) {
+        throw Xcept("Error on USB reader thread");
+    }
     uint8_t buffer[0x10000];
-    size_t read = readBuf.pop(buffer, sizeof(buffer));
+    size_t read = rdata.readBuf.pop(buffer, sizeof(buffer));
     if (read == 0) {
         std::this_thread::sleep_for(std::chrono::microseconds(1000));
     }
     data_stream.Put(buffer, read);
 }
 
-void DSReciever::readerThread(
-    boost::lockfree::spsc_queue<uint8_t>* readBuf,
-    volatile bool* terminate)
+void DSReciever::readerThread(ReaderData *rdata)
 {
     printf("reader thread started\n");
-
+    try {
 #ifdef __linux__
-    errno = 0;
-    nice(-20);
-    if (errno != 0)
-        printf("Warning, couldn't set nice to -20\n");
+        errno = 0;
+        nice(-20);
+        if (errno != 0)
+            printf("Warning, couldn't set nice to -20\n");
 #endif
 
-    ftdi_device* usb_device = new ftdi_device();
-    //if ((usb_device->GetDeviceInfoList().at(0).Flags & 2) == 0)
-    //    throw Xcept("ERROR: FT232 running in USB 1.1 mode, not in USB 2.0 mode");
-    usb_device->usb_open(0x0403, 0x6014);
-    usb_device->set_bitmode(0xFF, BITMODE_RESET);
-    usb_device->set_bitmode(0xFF, BITMODE_SYNCFF);
-    usb_device->set_latency_timer(2);
-    usb_device->data_set_chunksize(0x10000, 0x10000);
-    usb_device->set_flowctrl(SIO_RTS_CTS_HS, 0, 0);
-    usb_device->usb_purge_buffers();
-    usb_device->get_context()->usb_read_timeout = 10;
-    usb_device->get_context()->usb_write_timeout = 10;
+        ftdi_device* usb_device = new ftdi_device();
 
-    atomic_thread_fence(std::memory_order_acquire);
-    while (!*terminate) {
-        uint8_t buffer[0x10000];
-        size_t read = static_cast<size_t>(usb_device->read_data(buffer, sizeof(buffer)));
-        //printf("read count: %zx\n", read);
-        size_t written = readBuf->push(buffer, read);
-        if (written != read)
-            printf("warning, buffer overflow\n");
+#ifdef __unix__
+        usb_device->usb_open(0x0403, 0x6014);
+        usb_device->set_bitmode(0xFF, BITMODE_RESET);
+        usb_device->set_bitmode(0xFF, BITMODE_SYNCFF);
+        usb_device->set_flowctrl(SIO_RTS_CTS_HS, 0, 0);
+        usb_device->usb_purge_buffers();
+#elif _WIN32
+        usb_device->usb_open();
+        usb_device->set_bitmode(0xFF, FT_BITMODE_RESET);
+        usb_device->set_bitmode(0xFF, FT_BITMODE_SYNC_FIFO);
+        usb_device->set_flowctrl(FT_FLOW_RTS_CTS, 0, 0);
+        usb_device->usb_purge_buffers(FT_PURGE_RX | FT_PURGE_TX);
+#endif
+        usb_device->set_latency_timer(2);
+        usb_device->data_set_chunksize(0x10000, 0x10000);
+        usb_device->set_timeouts(10, 10);
+
         atomic_thread_fence(std::memory_order_acquire);
-    }
+        while (!rdata->terminate.load()) {
+            uint8_t buffer[0x10000];
+            size_t read = static_cast<size_t>(usb_device->read_data(buffer, sizeof(buffer)));
+            //printf("read count: %zx\n", read);
+            size_t written = rdata->readBuf.push(buffer, read);
+            if (written != read)
+                printf("warning, buffer overflow\n");
+            atomic_thread_fence(std::memory_order_acquire);
+        }
 
-    usb_device->usb_close();
-    delete usb_device;
+        usb_device->usb_close();
+        delete usb_device;
+    }
+    catch (const std::exception& e) {
+        fprintf(stderr, "Fatal Eror:\n%s", e.what());
+        rdata->error.store(1);
+    }
     printf("reader thread quit\n");
 }
