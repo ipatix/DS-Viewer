@@ -81,7 +81,7 @@ class ftdi_device {
         }
 };
 
-#elif __WIN32
+#elif _WIN32
 #include "ftd2xx.h"
 #include "WinTypes.h"
 
@@ -152,28 +152,28 @@ class ftdi_device
     public:
         // FT_Open device 0
         ftdi_device() {
-            closed = false;
+            closed = true;
             FT_STATUS err;
             if ((err = FT_Open(0, &handle)) != FT_OK)
                 throw Xcept("FT_Open: %s", getErrText(err));
         }
-        // FT_Open device n
-        ftdi_device(int deviceIndex) {
+        ~ftdi_device() {
+            if (!closed)
+                FT_Close(handle);
+        }
+
+        void usb_open(int deviceIndex) {
             closed = false;
             FT_STATUS err;
             if ((err = FT_Open(deviceIndex, &handle)) != FT_OK)
                 throw Xcept("FT_Open: %s", getErrText(err));
         }
-        // FT_OpenEx device
-        ftdi_device(std::string name, DWORD flags) {
+
+        void usb_open(const std::string& name, DWORD flags) {
             closed = false;
             FT_STATUS err;
             if ((err = FT_OpenEx((void *)name.c_str(), flags, &handle)) != FT_OK)
                 throw Xcept("FT_OpenEx: %s", getErrText(err));
-        }
-        ~ftdi_device() {
-            if (!closed)
-                FT_Close(handle);
         }
 
         void usb_close() {
