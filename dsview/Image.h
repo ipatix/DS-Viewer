@@ -5,17 +5,12 @@
 #include <cstddef>
 #include <cassert>
 
-#include "uint128_t.h"
-
 struct Color
 {
     Color();
     Color(uint8_t r, uint8_t g, uint8_t b);
     uint8_t r, g, b;
 };
-
-void BlockToCol(Color& tl, Color& bl, Color& tr, Color& br, uint128_t data);
-uint128_t ColToBlock(const Color& tl, const Color& bl, const Color& tr, const Color& br);
 
 class Image
 {

@@ -173,13 +173,13 @@ void DSReciever::readerThread(
     usb_device->set_bitmode(0xFF, BITMODE_RESET);
     usb_device->set_bitmode(0xFF, BITMODE_SYNCFF);
     usb_device->set_latency_timer(2);
-    usb_device->read_data_set_chunksize(0x10000);
-    usb_device->write_data_set_chunksize(0x10000);
-    usb_device->set_flowctrl(SIO_RTS_CTS_HS);
+    usb_device->data_set_chunksize(0x10000, 0x10000);
+    usb_device->set_flowctrl(SIO_RTS_CTS_HS, 0, 0);
     usb_device->usb_purge_buffers();
     usb_device->get_context()->usb_read_timeout = 10;
     usb_device->get_context()->usb_write_timeout = 10;
 
+    atomic_thread_fence(std::memory_order_acquire);
     while (!*terminate) {
         uint8_t buffer[0x10000];
         size_t read = static_cast<size_t>(usb_device->read_data(buffer, sizeof(buffer)));
@@ -187,6 +187,7 @@ void DSReciever::readerThread(
         size_t written = readBuf->push(buffer, read);
         if (written != read)
             printf("warning, buffer overflow\n");
+        atomic_thread_fence(std::memory_order_acquire);
     }
 
     usb_device->usb_close();

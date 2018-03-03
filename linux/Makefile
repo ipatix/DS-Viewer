@@ -6,8 +6,6 @@ LIBS = -lm -lSDL2 -pthread -lftdi1
 SRC_DIR = ../dsview
 OBJ_DIR = obj
 
-INCLUDE = -I ../portaudio/include
-
 GREEN = \033[1;32m
 RED = \033[1;31m
 BROWN = \033[1;33m

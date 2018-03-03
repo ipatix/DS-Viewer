@@ -143,7 +143,7 @@ void MediaViewer::imageTexture()
     int pitch;
     SDL_LockTexture(tex, NULL, &pixels, &pitch);
     uint8_t *upixels = (uint8_t *)pixels;
-	for (int i = 0; i < (pitch / sizeof(uint32_t)); i++)
+	for (size_t i = 0; i < (size_t(pitch) / sizeof(uint32_t)); i++)
 	{
 		if (i < VISIBLE_X + 2) {
 			*upixels++ = 0; *upixels++ = 0; *upixels++ = 0; *upixels++ = 0;
@@ -178,7 +178,7 @@ void MediaViewer::imageTexture()
 		*upixels++ = 0; *upixels++ = 0;	*upixels++ = 0;	*upixels++ = 0;
         upixels += (size_t(pitch) / sizeof(uint32_t)) - (VISIBLE_X + 2);
     }
-	for (int i = 0; i < (pitch / sizeof(uint32_t)); i++)
+	for (size_t i = 0; i < (size_t(pitch) / sizeof(uint32_t)); i++)
 	{
 		if (i < VISIBLE_X + 2) {
 			*upixels++ = 0; *upixels++ = 0; *upixels++ = 0; *upixels++ = 0;
