@@ -1,0 +1,36 @@
+#include "shaders.h"
+
+const char *Shaders::default_vertex_shader =
+"#version 140\n"
+"\n"
+"in vec3 vpos;\n"
+"in vec2 texcoord;\n"
+"\n"
+"out vec2 texpos;\n"
+"\n"
+"uniform mat4 MVP;\n"
+"\n"
+"void main() {\n"
+"    texpos = texcoord;\n"
+"    gl_Position = MVP * vec4(vpos, 1.0);\n"
+"}\n";
+
+const char *Shaders::default_fragment_shader =
+"#version 140\n"
+"\n"
+"in vec2 texpos;\n"
+"\n"
+"uniform sampler2D tex;\n"
+"uniform float alpha;\n"
+"\n"
+"float step(float t) {\n"
+"    if (t < 0.1) return 0.0;\n"
+"    else if (t > 0.9) return 1.0;\n"
+"    else return 0.5;\n"
+"}\n"
+"\n"
+"void main() {\n"
+"    vec4 texel = texture(tex, texpos);\n"
+"    gl_FragColor = vec4(texel.rgb, alpha);\n"
+//"    gl_FragColor = vec4(step(texpos.x), step(texpos.y), 0.0, 1.0);"
+"}\n";

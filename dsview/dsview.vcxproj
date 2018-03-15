@@ -92,6 +92,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>opengl32.lib;legacy_stdio_definitions.lib;ftd2xx.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -107,7 +108,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalOptions>
       </AdditionalOptions>
-      <AdditionalDependencies>legacy_stdio_definitions.lib;ftd2xx.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;legacy_stdio_definitions.lib;ftd2xx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>D:\Home\Documents\Visual Studio 2015\Projects\dsview\packages\sdl2.2.0.3\build\native\lib\x64\dynamic;D:\Home\Documents\Visual Studio 2015\Projects\dsview\dsview\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -126,6 +127,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>opengl32.lib;legacy_stdio_definitions.lib;ftd2xx.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -143,7 +145,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>legacy_stdio_definitions.lib;ftd2xx.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;legacy_stdio_definitions.lib;ftd2xx.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>D:\Home\Documents\Visual Studio 2015\Projects\dsview\dsview\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
@@ -154,8 +156,8 @@
     <ClCompile Include="BiQuad.cpp" />
     <ClCompile Include="CableReceiver.cpp" />
     <ClCompile Include="dsview.cpp" />
-    <ClCompile Include="Image.cpp" />
     <ClCompile Include="MediaViewer.cpp" />
+    <ClCompile Include="shaders.cpp" />
     <ClCompile Include="Xcept.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -164,6 +166,7 @@
     <ClInclude Include="Config.h" />
     <ClInclude Include="ftd2xx.h" />
     <ClInclude Include="ftdipp.h" />
+    <ClInclude Include="shaders.h" />
     <ClInclude Include="Image.h" />
     <ClInclude Include="MediaFrame.h" />
     <ClInclude Include="MediaViewer.h" />
@@ -179,6 +182,8 @@
     <Import Project="..\packages\sdl2.redist.2.0.3\build\native\sdl2.redist.targets" Condition="Exists('..\packages\sdl2.redist.2.0.3\build\native\sdl2.redist.targets')" />
     <Import Project="..\packages\sdl2.2.0.3\build\native\sdl2.targets" Condition="Exists('..\packages\sdl2.2.0.3\build\native\sdl2.targets')" />
     <Import Project="..\packages\boost.1.61.0.0\build\native\boost.targets" Condition="Exists('..\packages\boost.1.61.0.0\build\native\boost.targets')" />
+    <Import Project="..\packages\glew.v140.1.12.0\build\native\glew.v140.targets" Condition="Exists('..\packages\glew.v140.1.12.0\build\native\glew.v140.targets')" />
+    <Import Project="..\packages\glm.0.9.8.4\build\native\glm.targets" Condition="Exists('..\packages\glm.0.9.8.4\build\native\glm.targets')" />
   </ImportGroup>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
@@ -187,5 +192,7 @@
     <Error Condition="!Exists('..\packages\sdl2.redist.2.0.3\build\native\sdl2.redist.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\sdl2.redist.2.0.3\build\native\sdl2.redist.targets'))" />
     <Error Condition="!Exists('..\packages\sdl2.2.0.3\build\native\sdl2.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\sdl2.2.0.3\build\native\sdl2.targets'))" />
     <Error Condition="!Exists('..\packages\boost.1.61.0.0\build\native\boost.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\boost.1.61.0.0\build\native\boost.targets'))" />
+    <Error Condition="!Exists('..\packages\glew.v140.1.12.0\build\native\glew.v140.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\glew.v140.1.12.0\build\native\glew.v140.targets'))" />
+    <Error Condition="!Exists('..\packages\glm.0.9.8.4\build\native\glm.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\glm.0.9.8.4\build\native\glm.targets'))" />
   </Target>
 </Project>

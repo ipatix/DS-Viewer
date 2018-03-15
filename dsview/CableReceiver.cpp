@@ -55,28 +55,32 @@ void ICableReceiver::Receive()
 
     int bad_count = 0;
 
+    static const uint32_t xoffset = 4;
+
     while (true) {
         //fprintf(stderr, "%02x:%02x:%02x:%02x\n", fr_ptr[0], fr_ptr[1], fr_ptr[2], fr_ptr[3]);
         if (fr.IsValid()) {
             if (fr.IsVideo()) {
-                if (fr.IsVSync()) {
+                if (fr.IsVSync())
                     break;
-                }
-
                 if (fr.IsTopScr()) {
-                    top_screen(row_top, col_top++) = fr.pframe.GetColor();
-                    if (col_top >= top_screen.Width()) {
+                    if (row_top < NDS_H && col_top >= xoffset && col_top < NDS_W + xoffset)
+                        top_screen(row_top, col_top - xoffset) = fr.pframe.GetColor();
+                    col_top++;
+                    if (col_top >= VIDEO_WIDTH) {
                         col_top = 0;
-                        if (row_top == top_screen.Height() - 1)
+                        if (row_top == VIDEO_HEIGHT - 1)
                             row_top = 0;
                         else
                             row_top++;
                     }
                 } else {
-                    bot_screen(row_bot, col_bot++) = fr.pframe.GetColor();
-                    if (col_bot >= top_screen.Width()) {
+                    if (row_bot < NDS_H && col_bot >= xoffset && col_bot < NDS_W + xoffset)
+                        bot_screen(row_bot, col_bot - xoffset) = fr.pframe.GetColor();
+                    col_bot++;
+                    if (col_bot >= VIDEO_WIDTH) {
                         col_bot = 0;
-                        if (row_bot == top_screen.Height() - 1)
+                        if (row_bot == VIDEO_HEIGHT - 1)
                             row_bot = 0;
                         else
                             row_bot++;
