@@ -23,3 +23,11 @@ std::string FormatString(const char* fmt, TArgs&&... args)
     boost::format message(fmt);
     return FormatStringRecurse(message, std::forward<TArgs>(args)...);
 }
+
+#define GL_ERR_CHK() do {\
+    GLuint err = glGetError();\
+    if (err != GL_NO_ERROR)\
+        throw Xcept("OpenGL Error in file %s:%d with code %d", __FILE__, __LINE__, err);\
+    } while (0)
+
+#define M_PI 3.14159265358979323846

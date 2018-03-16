@@ -2,6 +2,8 @@
 #include <exception>
 #include <chrono>
 
+#include <GL/glew.h>
+
 #include "MediaViewer.h"
 #include "CableReceiver.h"
 #include "Config.h"
@@ -17,10 +19,11 @@ int main(int argc, char **argv)
 {
 	(void)argc;
 	(void)argv;
+
     try
     {
-        Image top(VIDEO_HEIGHT, VIDEO_WIDTH);
-        Image bot(VIDEO_HEIGHT, VIDEO_WIDTH);
+        Image top(NDS_H, NDS_W);
+        Image bot(NDS_H, NDS_W);
 		boost::lockfree::spsc_queue<float> audio_buffer(AUDIO_BUF_SIZE * 2);
         MediaViewer mv(top, bot, audio_buffer);
         //DummyReceiver receiver;
@@ -41,7 +44,7 @@ int main(int argc, char **argv)
     catch (const std::exception& e)
     {
         cerr << e.what() << endl;
-		this_thread::sleep_for(chrono::milliseconds(1000));
+		this_thread::sleep_for(chrono::milliseconds(50000));
     }
 
     return 0;
