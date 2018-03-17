@@ -395,6 +395,7 @@ bool MediaViewer::UpdateVideo(bool blank)
 
 
     glUseProgram(0);
+    GL_ERR_CHK();
 
     // TODO render things
     
@@ -476,7 +477,7 @@ void MediaViewer::calcMatrices(glm::mat4& upperScreenMat, glm::mat4& lowerScreen
         switch (rot_state[i]) {
         case DISP_MODE_R0:
             if (i == CUR_STATE && rot_state[OLD_STATE] == DISP_MODE_R270)
-                states[i].rot_state_angle = 2.0f * M_PI;
+                states[i].rot_state_angle = 2.0f * float(M_PI);
             else
                 states[i].rot_state_angle = 0.0;
 
@@ -499,7 +500,7 @@ void MediaViewer::calcMatrices(glm::mat4& upperScreenMat, glm::mat4& lowerScreen
             }
             break;
         case DISP_MODE_R90:
-            states[i].rot_state_angle = 0.5f * M_PI;
+            states[i].rot_state_angle = 0.5f * float(M_PI);
 
             switch (screen_state[i]) {
             case DISP_MODE_NDS_TOP_ON_BOT:
@@ -520,7 +521,7 @@ void MediaViewer::calcMatrices(glm::mat4& upperScreenMat, glm::mat4& lowerScreen
             }
             break;
         case DISP_MODE_R180:
-            states[i].rot_state_angle = M_PI;
+            states[i].rot_state_angle = float(M_PI);
 
             switch (screen_state[i]) {
             case DISP_MODE_NDS_TOP_ON_BOT:
@@ -542,9 +543,9 @@ void MediaViewer::calcMatrices(glm::mat4& upperScreenMat, glm::mat4& lowerScreen
             break;
         case DISP_MODE_R270:
             if (i == CUR_STATE && rot_state[OLD_STATE] == DISP_MODE_R0)
-                states[i].rot_state_angle = -0.5f * M_PI;
+                states[i].rot_state_angle = -0.5f * float(M_PI);
             else
-                states[i].rot_state_angle = 1.5f * M_PI;
+                states[i].rot_state_angle = 1.5f * float(M_PI);
 
             switch (screen_state[i]) {
             case DISP_MODE_NDS_TOP_ON_BOT:

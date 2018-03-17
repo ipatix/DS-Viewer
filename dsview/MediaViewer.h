@@ -47,14 +47,14 @@ class MediaViewer
         GLuint shader_program;
 
         struct {
-            GLuint vpos;
-            GLuint texcoord;
+            GLint vpos;
+            GLint texcoord;
         } vertex_attrib_locations;
 
         struct {
-            GLuint alpha;
-            GLuint tex;
-            GLuint MVP;
+            GLint alpha;
+            GLint tex;
+            GLint MVP;
         } uniform_locations;
 
         // misc

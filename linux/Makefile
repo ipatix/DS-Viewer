@@ -1,7 +1,7 @@
 CXX = clang++
 CXXFLAGS = -Wall -Wextra -Wconversion -Wunreachable-code -std=c++0x -O3 -g
 BINARY = dsview
-LIBS = -lm -lSDL2 -pthread -lftdi1
+LIBS = -lm -lSDL2 -pthread -lftdi1 -lGLEW -lGL
 
 SRC_DIR = ../dsview
 OBJ_DIR = obj

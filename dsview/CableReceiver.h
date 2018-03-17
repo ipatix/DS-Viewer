@@ -31,7 +31,7 @@ class ICableReceiver
 };
 
 struct ReaderData {
-    ReaderData() : terminate(false), readBuf(0x100000), error(false) {}
+    ReaderData() : readBuf(0x100000), terminate(false), error(false) {}
 
     boost::lockfree::spsc_queue<uint8_t> readBuf;
     std::atomic_bool terminate;
