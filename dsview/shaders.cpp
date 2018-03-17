@@ -31,6 +31,6 @@ const char *Shaders::default_fragment_shader =
 "\n"
 "void main() {\n"
 "    vec4 texel = texture2D(tex, texpos);\n"
-//"    gl_FragColor = vec4(texel.rgb, alpha);\n"
-"    gl_FragColor = vec4(step(texpos.x), step(texpos.y), 1.0, 1.0);"
+"    gl_FragColor = vec4(texel.rgb, alpha);\n"
+//"    gl_FragColor = vec4(step(texpos.x), step(texpos.y), 1.0, 1.0);"
 "}\n";
