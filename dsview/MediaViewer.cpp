@@ -9,8 +9,8 @@
 
 bool MediaViewer::mute = false;
 
-MediaViewer::MediaViewer(Image& _top, Image& _bottom, boost::lockfree::spsc_queue<float>& _audio_buffer)
-    : fullscreen(false), top(_top), bottom(_bottom), audio_buffer(_audio_buffer)
+MediaViewer::MediaViewer(boost::lockfree::spsc_queue<stereo_sample>& _audio_buffer)
+    : fullscreen(false), audio_buffer(_audio_buffer)
 {
     // transformations
     for (int i = 0; i < NUM_STATES; i++) {
@@ -20,21 +20,19 @@ MediaViewer::MediaViewer(Image& _top, Image& _bottom, boost::lockfree::spsc_queu
     anim_state_t = 0.0f;
 
     // Video
-    assert(top.Height() == bottom.Height());
-    assert(top.Width() == bottom.Width());
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
         throw Xcept("SDL_Init Error: %s", SDL_GetError());
-    win = SDL_CreateWindow("dsview V0.1", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, NDS_W, NDS_HH,
+    win = SDL_CreateWindow("dsview V0.2", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, NDS_W, NDS_HH,
         SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
     if (!win)
         throw Xcept("SDL_CreateWindow Error: %s", SDL_GetError());
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    SDL_GL_SetSwapInterval(1);
     glcon = SDL_GL_CreateContext(win);
     if (!glcon)
         throw Xcept("SDL_GL_CreateContext Error: %s", SDL_GetError());
     if (SDL_GL_MakeCurrent(win, glcon))
         throw Xcept("SDL_GL_MakeCurrent Error: %s", SDL_GetError());
+    SDL_GL_SetSwapInterval(1);
     glewInit();
 
     // misc opengl
@@ -167,7 +165,6 @@ MediaViewer::MediaViewer(Image& _top, Image& _bottom, boost::lockfree::spsc_queu
 
     SDL_GetWindowSize(win, &win_w, &win_h);
     glViewport(0, 0, win_w, win_h);
-    UpdateVideo(true);
     // Audio
     SDL_AudioSpec spec;
     spec.freq = AUDIO_SAMPLERATE;
@@ -196,7 +193,7 @@ MediaViewer::~MediaViewer()
     SDL_Quit();
 }
 
-bool MediaViewer::UpdateVideo(bool blank)
+bool MediaViewer::UpdateVideo(ICableReceiver& rec, float frameTime)
 {
     SDL_Event sev;
     while (SDL_PollEvent(&sev))
@@ -358,22 +355,25 @@ bool MediaViewer::UpdateVideo(bool blank)
     }
     GL_ERR_CHK();
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    if (!blank) {
-        // upload new texture data
-        glBindTexture(GL_TEXTURE_2D, screen_textures[SCREEN_TEX_TOP]);
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, NDS_W, NDS_H, GL_RGB, GL_UNSIGNED_BYTE, top.getData());
-        glGenerateMipmap(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, screen_textures[SCREEN_TEX_BOT]);
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, NDS_W, NDS_H, GL_RGB, GL_UNSIGNED_BYTE, bottom.getData());
-        glGenerateMipmap(GL_TEXTURE_2D);
-        glBindTexture(GL_TEXTURE_2D, 0);
-    }
+
+    // upload new texture data
+    const void *top, *bot;
+    glBindTexture(GL_TEXTURE_2D, screen_textures[SCREEN_TEX_TOP]);
+    rec.LockFrame(&top, &bot);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, NDS_W, NDS_H, GL_RGB, GL_UNSIGNED_BYTE, top);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, screen_textures[SCREEN_TEX_BOT]);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, NDS_W, NDS_H, GL_RGB, GL_UNSIGNED_BYTE, bot);
+    rec.UnlockFrame();
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, 0);
+
     GL_ERR_CHK();
 
     float upperScreenAlpha, lowerScreenAlpha;
     glm::mat4 upperScreenMat, lowerScreenMat;
 
-    calcMatrices(upperScreenMat, lowerScreenMat, upperScreenAlpha, lowerScreenAlpha);
+    calcMatrices(upperScreenMat, lowerScreenMat, upperScreenAlpha, lowerScreenAlpha, frameTime);
 
     glUseProgram(shader_program);
     glBindVertexArray(rect_vao);
@@ -398,7 +398,7 @@ bool MediaViewer::UpdateVideo(bool blank)
     GL_ERR_CHK();
 
     // TODO render things
-    
+
     SDL_GL_SwapWindow(win);
 
     return true;
@@ -411,7 +411,10 @@ void MediaViewer::toggleFullscreen()
         throw Xcept("SDL_SetWindowFullscreen: %s", SDL_GetError());
 }
 
-void MediaViewer::calcMatrices(glm::mat4& upperScreenMat, glm::mat4& lowerScreenMat, float& upperScreenAlpha, float& lowerScreenAlpha) {
+void MediaViewer::calcMatrices(glm::mat4& upperScreenMat, glm::mat4& lowerScreenMat,
+    float& upperScreenAlpha, float& lowerScreenAlpha,
+    float frameTime)
+{
     struct {
         float rot_state_angle;
         float rot_state_width;
@@ -605,7 +608,7 @@ void MediaViewer::calcMatrices(glm::mat4& upperScreenMat, glm::mat4& lowerScreen
     lowerScreenMat = glm::translate(lowerScreenMat, bot_screen_offset);
 
     if (rot_state[CUR_STATE] != rot_state[OLD_STATE] || screen_state[CUR_STATE] != screen_state[OLD_STATE]) {
-        anim_state_t += 0.05f;
+        anim_state_t += frameTime * 2.5f;
         if (anim_state_t >= 1.0f) {
             rot_state[OLD_STATE] = rot_state[CUR_STATE];
             screen_state[OLD_STATE] = screen_state[CUR_STATE];
@@ -616,13 +619,13 @@ void MediaViewer::calcMatrices(glm::mat4& upperScreenMat, glm::mat4& lowerScreen
 
 void MediaViewer::audioCallback(void *userdata, uint8_t *stream, int len)
 {
-    float *buffer = (float *)stream;
-    size_t frames = size_t(len) / sizeof(float) / 2;
-    boost::lockfree::spsc_queue<float> *buf = (boost::lockfree::spsc_queue<float> *)userdata;
+    stereo_sample *buffer = reinterpret_cast<stereo_sample *>(stream);
+    size_t frames = size_t(len) / sizeof(stereo_sample);
+    boost::lockfree::spsc_queue<stereo_sample> *buf = static_cast<boost::lockfree::spsc_queue<stereo_sample> *>(userdata);
 
-    size_t took = buf->pop(buffer, frames * 2);
-	std::fill(buffer + took, buffer + (frames * 2), 0.f);
+    size_t took = buf->pop(buffer, frames);
+	std::fill(buffer + took, buffer + frames, stereo_sample());
 	if (MediaViewer::IsMuted())
-		for (size_t i = 0; i < frames * 2; i++)
-			buffer[i] = 0.f;
+		for (size_t i = 0; i < frames; i++)
+			buffer[i] = stereo_sample();
 }

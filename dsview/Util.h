@@ -30,4 +30,14 @@ std::string FormatString(const char* fmt, TArgs&&... args)
         throw Xcept("OpenGL Error in file %s:%d with code %d", __FILE__, __LINE__, err);\
     } while (0)
 
+#ifndef M_PI
 #define M_PI 3.14159265358979323846
+#endif
+
+struct stereo_sample {
+    stereo_sample() {
+        l = r = 0.0f;
+    }
+    float l;
+    float r;
+};

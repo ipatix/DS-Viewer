@@ -4,7 +4,7 @@
 #include <math.h>
 
 BiQuad::BiQuad() {
-	type = bq_type_lowpass;
+	type = BQ_TYPE_LOWPASS;
 	a0 = 1.0;
 	a1 = a2 = b1 = b2 = 0.0;
 	Fc = 0.50;
@@ -53,7 +53,7 @@ void BiQuad::calcBiQuad(void) {
 	double V = pow(10, fabs(peakGain) / 20.0);
 	double K = tan(M_PI * Fc);
 	switch (this->type) {
-	case bq_type_lowpass:
+	case BQ_TYPE_LOWPASS:
 		norm = 1 / (1 + K / Q + K * K);
 		a0 = K * K * norm;
 		a1 = 2 * a0;
@@ -62,7 +62,7 @@ void BiQuad::calcBiQuad(void) {
 		b2 = (1 - K / Q + K * K) * norm;
 		break;
 
-	case bq_type_highpass:
+	case BQ_TYPE_HIGHPASS:
 		norm = 1 / (1 + K / Q + K * K);
 		a0 = 1 * norm;
 		a1 = -2 * a0;
@@ -71,7 +71,7 @@ void BiQuad::calcBiQuad(void) {
 		b2 = (1 - K / Q + K * K) * norm;
 		break;
 
-	case bq_type_bandpass:
+	case BQ_TYPE_BANDPASS:
 		norm = 1 / (1 + K / Q + K * K);
 		a0 = K / Q * norm;
 		a1 = 0;
@@ -80,7 +80,7 @@ void BiQuad::calcBiQuad(void) {
 		b2 = (1 - K / Q + K * K) * norm;
 		break;
 
-	case bq_type_notch:
+	case BQ_TYPE_NOTCH:
 		norm = 1 / (1 + K / Q + K * K);
 		a0 = (1 + K * K) * norm;
 		a1 = 2 * (K * K - 1) * norm;
@@ -89,7 +89,7 @@ void BiQuad::calcBiQuad(void) {
 		b2 = (1 - K / Q + K * K) * norm;
 		break;
 
-	case bq_type_peak:
+	case BQ_TYPE_PEAK:
 		if (peakGain >= 0) {    // boost
 			norm = 1 / (1 + 1 / Q * K + K * K);
 			a0 = (1 + V / Q * K + K * K) * norm;
@@ -107,7 +107,7 @@ void BiQuad::calcBiQuad(void) {
 			b2 = (1 - V / Q * K + K * K) * norm;
 		}
 		break;
-	case bq_type_lowshelf:
+	case BQ_TYPE_LOWSHELF:
 		if (peakGain >= 0) {    // boost
 			norm = 1 / (1 + sqrt(2) * K + K * K);
 			a0 = (1 + sqrt(2 * V) * K + V * K * K) * norm;
@@ -125,7 +125,7 @@ void BiQuad::calcBiQuad(void) {
 			b2 = (1 - sqrt(2 * V) * K + V * K * K) * norm;
 		}
 		break;
-	case bq_type_highshelf:
+	case BQ_TYPE_HIGHSHELF:
 		if (peakGain >= 0) {    // boost
 			norm = 1 / (1 + sqrt(2) * K + K * K);
 			a0 = (V + sqrt(2 * V) * K + K * K) * norm;

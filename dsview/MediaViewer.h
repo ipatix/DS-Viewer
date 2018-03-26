@@ -10,20 +10,22 @@
 
 #include <boost/lockfree/spsc_queue.hpp>
 
-#include "Image.h"
+#include "CableReceiver.h"
 #include "Xcept.h"
 
 class MediaViewer
 {
     public:
-        MediaViewer(Image& _top, Image& _bottom, boost::lockfree::spsc_queue<float>& _audio_buffer);
+        MediaViewer(boost::lockfree::spsc_queue<stereo_sample>& audio_buffer);
         ~MediaViewer();
-        bool UpdateVideo(bool blank);
+        bool UpdateVideo(ICableReceiver& rec, float frameTime);
 		static bool IsMuted() { return mute; }
     private:
         void toggleFullscreen();
 
-        void calcMatrices(glm::mat4& upperScreenMat, glm::mat4& lowerScreenMat, float& upperScreenAlpha, float &lowerScreenAlpha);
+        void calcMatrices(glm::mat4& upperScreenMat, glm::mat4& lowerScreenMat,
+            float& upperScreenAlpha, float &lowerScreenAlpha,
+            float frameTime);
 
         static void audioCallback(void *userdata, uint8_t *stream, int len);
 
@@ -89,10 +91,7 @@ class MediaViewer
 
 		int win_h, win_w;
 
-        Image& top;
-        Image& bottom;
-
-		boost::lockfree::spsc_queue<float>& audio_buffer;
+		boost::lockfree::spsc_queue<stereo_sample>& audio_buffer;
         
         SDL_AudioDeviceID audioDeviceID;
 };

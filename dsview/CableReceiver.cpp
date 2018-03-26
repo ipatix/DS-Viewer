@@ -20,144 +20,155 @@
 #include "MediaFrame.h"
 #include "Xcept.h"
 
-using namespace std;
+static const size_t READ_BLOCK_SIZE = 0x10000;
 
 // interface
 
-ICableReceiver::ICableReceiver(Image& _top_screen, Image& _bot_screen, boost::lockfree::spsc_queue<float>& _audio_buffer)
-    : top_screen(_top_screen)
-    , bot_screen(_bot_screen)
-    , audio_buffer(_audio_buffer)
-    , data_stream(0x20000)
-    , leftHPFilter(bq_type_highpass, 10.f / float(AUDIO_SAMPLERATE), 0.707f, 0)
-    , rightHPFilter(bq_type_highpass, 10.f / float(AUDIO_SAMPLERATE), 0.707f, 0)
-    , leftLPFilter(bq_type_lowpass, 15000.f / float(AUDIO_SAMPLERATE), 0.707f, 0)
-    , rightLPFilter(bq_type_lowpass, 15000.f / float(AUDIO_SAMPLERATE), 0.707f, 0)
+ICableReceiver::ICableReceiver(boost::lockfree::spsc_queue<stereo_sample>& audio_buffer)
+    : audio_buffer(audio_buffer)
 {
 }
 
-void ICableReceiver::Receive()
-{
-    uint32_t col_top = 0, row_top = 0;
-    uint32_t col_bot = 0, row_bot = 0;
-    audio_target_data.clear();
-    assert(top_screen.Width() == bot_screen.Width());
-    assert(top_screen.Height() == bot_screen.Height());
-
-    MediaFrame fr;
-    uint8_t* fr_ptr = (uint8_t*)&fr;
-    static_assert(sizeof(MediaFrame) == 4, "Media Frames must be 4 byte big");
-    
-    while (data_stream.DataCount() < sizeof(fr)) {
-        fetchData();
-    }
-    data_stream.Take((uint8_t*)&fr, sizeof(fr));
-
-    int bad_count = 0;
-
-    static const uint32_t xoffset = 4;
-
-    while (true) {
-        //fprintf(stderr, "%02x:%02x:%02x:%02x\n", fr_ptr[0], fr_ptr[1], fr_ptr[2], fr_ptr[3]);
-        if (fr.IsValid()) {
-            if (fr.IsVideo()) {
-                if (fr.IsVSync())
-                    break;
-                if (fr.IsTopScr()) {
-                    if (row_top < NDS_H && col_top >= xoffset && col_top < NDS_W + xoffset)
-                        top_screen(row_top, col_top - xoffset) = fr.pframe.GetColor();
-                    col_top++;
-                    if (col_top >= VIDEO_WIDTH) {
-                        col_top = 0;
-                        if (row_top == VIDEO_HEIGHT - 1)
-                            row_top = 0;
-                        else
-                            row_top++;
-                    }
-                } else {
-                    if (row_bot < NDS_H && col_bot >= xoffset && col_bot < NDS_W + xoffset)
-                        bot_screen(row_bot, col_bot - xoffset) = fr.pframe.GetColor();
-                    col_bot++;
-                    if (col_bot >= VIDEO_WIDTH) {
-                        col_bot = 0;
-                        if (row_bot == VIDEO_HEIGHT - 1)
-                            row_bot = 0;
-                        else
-                            row_bot++;
-                    }
-                }
-            } else {
-                float l, r;
-                fr.aframe.GetAudio(r, l);
-
-                audio_target_data.push_back(l);
-                audio_target_data.push_back(r);
-
-                if (audio_target_data.size() >= 2400) {
-                    //cout << "Early breaking...\n";
-                    //cout << "Audio count: " << audio_target_data.size() / 2 << endl;
-                    break;
-                }
-            }
-            while (data_stream.DataCount() < sizeof(fr)) {
-                fetchData();
-            }
-            data_stream.Take((uint8_t*)&fr, sizeof(fr));
-        } else {
-            //fprintf(stderr, "Error: broken frame %02x:%02x:%02x:%02x\n", fr_ptr[0], fr_ptr[1], fr_ptr[2], fr_ptr[3]);
-            fr_ptr[0] = fr_ptr[1];
-            fr_ptr[1] = fr_ptr[2];
-            fr_ptr[2] = fr_ptr[3];
-            while (data_stream.DataCount() < sizeof(fr_ptr[3])) {
-                fetchData();
-            }
-            data_stream.Take(fr_ptr + 3, 1);
-            bad_count++;
-        }
-    }
-    if (bad_count > 0)
-        printf("Bad count: %d\n", bad_count);
-
-    for (size_t i = 0; i < audio_target_data.size(); i += 2) {
-        audio_target_data[i] = leftHPFilter.Process(audio_target_data[i]);
-        audio_target_data[i + 1] = rightHPFilter.Process(audio_target_data[i + 1]);
-    }
-
-    audio_buffer.push(audio_target_data.data(), audio_target_data.size());
-}
 /*
- * DSReceiver
- */
+* DSReceiver
+*/
 
-DSReciever::DSReciever(Image& _top_screen, Image& _bot_screen, boost::lockfree::spsc_queue<float>& _audio_buffer)
-    : ICableReceiver::ICableReceiver(_top_screen, _bot_screen, _audio_buffer)
-    , reader(readerThread, &rdata)
+DSCableReceiver::DSCableReceiver(boost::lockfree::spsc_queue<stereo_sample>& audio_buffer)
+    : ICableReceiver(audio_buffer)
+    , image_buffers(IMAGE_QUEUE_LEN)
+    , display_index(1)
+    , decoder_index(0)
+    , leftHPFilter(BQ_TYPE_HIGHPASS, 10.0f / float(AUDIO_SAMPLERATE), 0.707f, 0)
+    , rightHPFilter(BQ_TYPE_HIGHPASS, 10.0f / float(AUDIO_SAMPLERATE), 0.707f, 0)
+    , read_buf(0x200000)
+    , decoder_cache(READ_BLOCK_SIZE / sizeof(MediaFrame))
+    , audio_cache(512)
+    , terminate(false)
+    , reader_error(false)
+    , decoder_error(false)
+    , reader(readerThread, this)
+    , decoder(decoderThread, this)
 {
 #ifdef __linux__
     pthread_setname_np(reader.native_handle(), "usb reader");
 #endif
 }
 
-DSReciever::~DSReciever()
+DSCableReceiver::~DSCableReceiver()
 {
-    rdata.terminate.store(true);
+    terminate.store(true);
     reader.join();
+    decoder.join();
 }
 
-void DSReciever::fetchData()
+void DSCableReceiver::LockFrame(const void **top_screen, const void **bot_screen)
 {
-    if (rdata.error.load()) {
-        throw Xcept("Error on USB reader thread");
-    }
-    uint8_t buffer[0x10000];
-    size_t read = rdata.readBuf.pop(buffer, sizeof(buffer));
-    if (read == 0) {
-        std::this_thread::sleep_for(std::chrono::microseconds(1000));
-    }
-    data_stream.Put(buffer, read);
+    display_index_mutex.lock();
+    *top_screen = image_buffers[display_index].top.getData();
+    *bot_screen = image_buffers[display_index].bot.getData();
+    //printf("index=%d\n", display_index);
+    return;
 }
 
-void DSReciever::readerThread(ReaderData *rdata)
+void DSCableReceiver::UnlockFrame()
+{
+    display_index_mutex.unlock();
+}
+
+void DSCableReceiver::decoderThread(DSCableReceiver *_this)
+{
+    for (int i = 0; i < IMAGE_QUEUE_LEN; i++) {
+        assert(_this->image_buffers[i].top.Height() == _this->image_buffers[i].bot.Height());
+    }
+    static_assert(READ_BLOCK_SIZE % sizeof(MediaFrame) == 0, "READ_BLOCK_SIZE must be a multiple of sizeof(MediaFrame)");
+    static_assert(sizeof(MediaFrame) == 4, "Media Frames must be 4 byte big");
+    static_assert(sizeof(Color) == 3, "sizeof(Color) must be 3");
+
+    Color *top_color = static_cast<Color *>(_this->image_buffers[_this->decoder_index].top.getData());
+    Color *bot_color = static_cast<Color *>(_this->image_buffers[_this->decoder_index].bot.getData());
+
+    static const int left_blank = 4;
+    static const int right_blank = 3;
+
+    int top_col = 0;
+    int bot_col = 0;
+    int top_row = 0;
+    int bot_row = 0;
+
+    size_t audio_index = 0;
+
+    while (!_this->terminate.load()) {
+        if (_this->read_buf.read_available() < READ_BLOCK_SIZE) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            continue;
+        }
+
+        _this->read_buf.pop(reinterpret_cast<uint8_t *>(_this->decoder_cache.data()), READ_BLOCK_SIZE);
+
+        for (const MediaFrame& mf : _this->decoder_cache) {
+            if (!mf.IsValid()) {
+                // try to realign the buffer by one byte incase there is a bad byte
+                // don't care about dropping this 64k chunk because it'll usually stay in sync and this
+                // is just a fraction of a frame
+                _this->read_buf.pop();
+                static int bad_count = 0;
+                fprintf(stderr, "Bad frame detected: %d\n", bad_count++);
+                break;
+            }
+            if (mf.IsVideo()) {
+                // video frame
+                if (mf.IsVSync()) {
+                    top_col = 0;
+                    bot_col = 0;
+                    top_row = 0;
+                    bot_row = 0;
+                    // read frame successfully, now send off frame to viewer
+                    _this->display_index_mutex.lock();
+                    //printf("dispi=%d deci=%d\n", _this->display_index, _this->decoder_index);
+                    _this->decoder_index += 1;
+                    if (_this->decoder_index >= IMAGE_QUEUE_LEN)
+                        _this->decoder_index = 0;
+                    _this->display_index += 1;
+                    if (_this->display_index >= IMAGE_QUEUE_LEN)
+                        _this->display_index = 0;
+                    _this->display_index_mutex.unlock();
+                    top_color = static_cast<Color *>(_this->image_buffers[_this->decoder_index].top.getData());
+                    bot_color = static_cast<Color *>(_this->image_buffers[_this->decoder_index].bot.getData());
+                }
+                else if (mf.IsTopScr()) {
+                    if (top_col >= left_blank && top_col < (NDS_W + left_blank) && top_row < NDS_H)
+                        *top_color++ = mf.pframe.GetColor();
+                    top_col += 1;
+                    if (top_col >= left_blank + NDS_W + right_blank) {
+                        top_col = 0;
+                        top_row += 1;
+                    }
+                }
+                else {
+                    if (bot_col >= left_blank && top_col < (NDS_W + left_blank) && bot_row < NDS_H)
+                        *bot_color++ = mf.pframe.GetColor();
+                    bot_col += 1;
+                    if (bot_col >= left_blank + NDS_W + right_blank) {
+                        bot_col = 0;
+                        bot_row += 1;
+                    }
+                }
+            }
+            else {
+                // audio frame
+                stereo_sample sample;
+                mf.aframe.GetAudio(sample.l, sample.r);
+                _this->audio_cache[audio_index++] = sample;
+                if (audio_index >= _this->audio_cache.size()) {
+                    audio_index = 0;
+                    _this->audio_buffer.push(_this->audio_cache.data(), _this->audio_cache.size());
+                }
+            }
+        }
+    }
+}
+
+void DSCableReceiver::readerThread(DSCableReceiver *_this)
 {
     printf("reader thread started\n");
     try {
@@ -167,9 +178,7 @@ void DSReciever::readerThread(ReaderData *rdata)
         if (errno != 0)
             printf("Warning, couldn't set nice to -20\n");
 #endif
-
         ftdi_device* usb_device = new ftdi_device();
-
 #ifdef __unix__
         usb_device->usb_open(0x0403, 0x6014);
         usb_device->set_bitmode(0xFF, BITMODE_RESET);
@@ -182,17 +191,19 @@ void DSReciever::readerThread(ReaderData *rdata)
         usb_device->set_bitmode(0xFF, FT_BITMODE_SYNC_FIFO);
         usb_device->set_flowctrl(FT_FLOW_RTS_CTS, 0, 0);
         usb_device->usb_purge_buffers(FT_PURGE_RX | FT_PURGE_TX);
+#else
+#error "Invalid Architecture"
 #endif
         usb_device->set_latency_timer(2);
         usb_device->data_set_chunksize(0x10000, 0x10000);
         usb_device->set_timeouts(10, 10);
 
         atomic_thread_fence(std::memory_order_acquire);
-        while (!rdata->terminate.load()) {
+        while (!_this->terminate.load()) {
             uint8_t buffer[0x10000];
             size_t read = static_cast<size_t>(usb_device->read_data(buffer, sizeof(buffer)));
             //printf("read count: %zx\n", read);
-            size_t written = rdata->readBuf.push(buffer, read);
+            size_t written = _this->read_buf.push(buffer, read);
             if (written != read)
                 printf("warning, buffer overflow\n");
             atomic_thread_fence(std::memory_order_acquire);
@@ -203,7 +214,7 @@ void DSReciever::readerThread(ReaderData *rdata)
     }
     catch (const std::exception& e) {
         fprintf(stderr, "Fatal Eror:\n%s", e.what());
-        rdata->error.store(1);
+        _this->decoder_error.store(1);
     }
     printf("reader thread quit\n");
 }

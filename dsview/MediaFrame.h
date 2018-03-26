@@ -7,7 +7,7 @@
 
 struct MAudioFrame
 {
-	void GetAudio(float& fL, float& fR) 
+	void GetAudio(float& fL, float& fR) const
 	{
 		int left = ((lr & 0xF) << 8) | r;
 		left -= 0x800;
@@ -25,7 +25,7 @@ struct MAudioFrame
 
 struct MPixelFrame
 {
-	Color GetColor() { return Color(uint8_t(r << 2), uint8_t(g << 2), uint8_t(b << 2)); }
+	Color GetColor() const { return Color(uint8_t(r << 2), uint8_t(g << 2), uint8_t(b << 2)); }
 
 	uint8_t flags;
 	uint8_t r;
@@ -42,11 +42,11 @@ struct MediaFrame
 		MPixelFrame pframe;
 	};
 
-	bool IsValid()  { return flags & 0b10000000 ? true : false; }
-	bool IsVideo()  { return flags & 0b01000000 ? true : false; }
-	bool IsAudio()  { return flags & 0b01000000 ? false : true; }
-	bool IsVSync()  { return flags & 0b00000001 ? true : false; }
-	bool IsTopScr() { return flags & 0b00000010 ? true : false; }
+	bool IsValid()  const { return flags & 0b10000000 ? true : false; }
+	bool IsVideo()  const { return flags & 0b01000000 ? true : false; }
+	bool IsAudio()  const { return flags & 0b01000000 ? false : true; }
+	bool IsVSync()  const { return flags & 0b00000001 ? true : false; }
+	bool IsTopScr() const { return flags & 0b00000010 ? true : false; }
 };
 
 /*

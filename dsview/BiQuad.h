@@ -1,13 +1,13 @@
 #pragma once
 
 enum {
-	bq_type_lowpass = 0,
-	bq_type_highpass,
-	bq_type_bandpass,
-	bq_type_notch,
-	bq_type_peak,
-	bq_type_lowshelf,
-	bq_type_highshelf
+	BQ_TYPE_LOWPASS = 0,
+	BQ_TYPE_HIGHPASS,
+	BQ_TYPE_BANDPASS,
+	BQ_TYPE_NOTCH,
+	BQ_TYPE_PEAK,
+	BQ_TYPE_LOWSHELF,
+	BQ_TYPE_HIGHSHELF
 };
 
 class BiQuad {
