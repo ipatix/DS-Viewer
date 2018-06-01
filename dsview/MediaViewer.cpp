@@ -407,8 +407,22 @@ bool MediaViewer::UpdateVideo(ICableReceiver& rec, float frameTime)
 void MediaViewer::toggleFullscreen()
 {
     fullscreen = !fullscreen;
-    if (SDL_SetWindowFullscreen(win, fullscreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0))
-        throw Xcept("SDL_SetWindowFullscreen: %s", SDL_GetError());
+    if (fullscreen) {
+        int displayIndex = SDL_GetWindowDisplayIndex(win);
+        if (displayIndex < 0)
+            throw Xcept("SDL_GetWindowDisplayIndex Error: %s", SDL_GetError());
+        SDL_DisplayMode mode;
+        if (SDL_GetDesktopDisplayMode(displayIndex, &mode))
+            throw Xcept("SDL_GetDesktopDisplayMode Error: %s", SDL_GetError());
+        if (SDL_SetWindowDisplayMode(win, &mode))
+            throw Xcept("SDL_SetWindowDisplayMode Error: %s", SDL_GetError());
+        if (SDL_SetWindowFullscreen(win, SDL_WINDOW_FULLSCREEN))
+            throw Xcept("SDL_SetWindowFullscreen: %s", SDL_GetError());
+    }
+    else {
+        if (SDL_SetWindowFullscreen(win, 0))
+            throw Xcept("SDL_SetWindowFullscreen: %s", SDL_GetError());
+    }
 }
 
 void MediaViewer::calcMatrices(glm::mat4& upperScreenMat, glm::mat4& lowerScreenMat,
