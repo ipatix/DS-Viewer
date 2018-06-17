@@ -42,7 +42,6 @@ int main(int argc, char **argv)
     catch (const std::exception& e)
     {
         cerr << e.what() << endl;
-		this_thread::sleep_for(chrono::milliseconds(50000));
     }
 
     return 0;
