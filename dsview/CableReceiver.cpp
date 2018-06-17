@@ -66,7 +66,6 @@ void DSCableReceiver::LockFrame(const void **top_screen, const void **bot_screen
     display_index_mutex.lock();
     *top_screen = image_buffers[display_index].top.getData();
     *bot_screen = image_buffers[display_index].bot.getData();
-    //printf("index=%d\n", display_index);
     return;
 }
 
@@ -77,7 +76,7 @@ void DSCableReceiver::UnlockFrame()
 
 void DSCableReceiver::decoderThread(DSCableReceiver *_this)
 {
-    for (int i = 0; i < IMAGE_QUEUE_LEN; i++) {
+    for (size_t i = 0; i < IMAGE_QUEUE_LEN; i++) {
         assert(_this->image_buffers[i].top.Height() == _this->image_buffers[i].bot.Height());
     }
     static_assert(READ_BLOCK_SIZE % sizeof(MediaFrame) == 0, "READ_BLOCK_SIZE must be a multiple of sizeof(MediaFrame)");
@@ -124,7 +123,6 @@ void DSCableReceiver::decoderThread(DSCableReceiver *_this)
                     bot_row = 0;
                     // read frame successfully, now send off frame to viewer
                     _this->display_index_mutex.lock();
-                    //printf("dispi=%d deci=%d\n", _this->display_index, _this->decoder_index);
                     _this->decoder_index += 1;
                     if (_this->decoder_index >= IMAGE_QUEUE_LEN)
                         _this->decoder_index = 0;

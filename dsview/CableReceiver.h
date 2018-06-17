@@ -51,7 +51,7 @@ protected:
     };
     std::vector<image_buffer> image_buffers;
     std::mutex display_index_mutex;
-    int display_index, decoder_index;
+    size_t display_index, decoder_index;
 
     BiQuad leftHPFilter;
     BiQuad rightHPFilter;
