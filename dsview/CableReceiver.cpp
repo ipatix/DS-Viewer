@@ -51,6 +51,7 @@ DSCableReceiver::DSCableReceiver(boost::lockfree::spsc_queue<stereo_sample>& aud
 {
 #ifdef __linux__
     pthread_setname_np(reader.native_handle(), "usb reader");
+    pthread_setname_np(decoder.native_handle(), "decoder");
 #endif
 }
 
