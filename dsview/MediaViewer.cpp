@@ -1,7 +1,6 @@
 #include <cassert>
 #include <algorithm>
 #include <iostream>
-
 #include "MediaViewer.h"
 #include "Config.h"
 #include "Xcept.h"
@@ -44,6 +43,15 @@ MediaViewer::MediaViewer(boost::lockfree::spsc_queue<stereo_sample>& _audio_buff
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    bool anisotropy_present = false;
+    const char *ext = reinterpret_cast<const char *>(glGetString(GL_EXTENSIONS));
+    if (ext) {
+        if (strstr(ext, "GL_ARB_texture_filter_anisotropic"))
+            anisotropy_present = true;
+        else if (strstr(ext, "GL_EXT_texture_filter_anisotropic"))
+            anisotropy_present = true;
+    }
+
     // textures
     GL_ERR_CHK();
 
@@ -52,7 +60,8 @@ MediaViewer::MediaViewer(boost::lockfree::spsc_queue<stereo_sample>& _audio_buff
     glBindTexture(GL_TEXTURE_2D, screen_textures[SCREEN_TEX_TOP]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
+    if (anisotropy_present)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
@@ -61,7 +70,8 @@ MediaViewer::MediaViewer(boost::lockfree::spsc_queue<stereo_sample>& _audio_buff
     glBindTexture(GL_TEXTURE_2D, screen_textures[SCREEN_TEX_BOT]);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
+    if (anisotropy_present)
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, 16.0f);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
@@ -371,7 +381,7 @@ bool MediaViewer::UpdateVideo(ICableReceiver& rec, float frameTime)
     GL_ERR_CHK();
 
     float upperScreenAlpha, lowerScreenAlpha;
-    glm::mat4 upperScreenMat, lowerScreenMat;
+    glm::mat4 upperScreenMat(1.0), lowerScreenMat(1.0);
 
     calcMatrices(upperScreenMat, lowerScreenMat, upperScreenAlpha, lowerScreenAlpha, frameTime);
 
