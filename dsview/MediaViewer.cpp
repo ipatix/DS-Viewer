@@ -21,6 +21,8 @@ MediaViewer::MediaViewer(boost::lockfree::spsc_queue<stereo_sample>& _audio_buff
     // Video
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO))
         throw Xcept("SDL_Init Error: %s", SDL_GetError());
+    if (!SDL_SetHint(SDL_HINT_VIDEO_MINIMIZE_ON_FOCUS_LOSS, "0"))
+        throw Xcept("SDL_SetHint Error: Couldn't disable minimize on focus loss");
     win = SDL_CreateWindow("dsview V0.2", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, NDS_W, NDS_HH,
         SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
     if (!win)
