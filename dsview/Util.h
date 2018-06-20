@@ -38,6 +38,6 @@ struct stereo_sample {
     stereo_sample() {
         l = r = 0.0f;
     }
-    float l;
     float r;
+    float l;
 };
