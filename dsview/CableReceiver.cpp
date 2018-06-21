@@ -51,6 +51,7 @@ DSCableReceiver::DSCableReceiver(boost::lockfree::spsc_queue<stereo_sample>& aud
 {
 #ifdef __linux__
     pthread_setname_np(reader.native_handle(), "usb reader");
+    pthread_setname_np(decoder.native_handle(), "decoder");
 #endif
 }
 
@@ -196,10 +197,17 @@ void DSCableReceiver::readerThread(DSCableReceiver *_this)
         usb_device->data_set_chunksize(0x10000, 0x10000);
         usb_device->set_timeouts(10, 10);
 
+        //auto tstart = std::chrono::high_resolution_clock::now();
+
         atomic_thread_fence(std::memory_order_acquire);
         while (!_this->terminate.load()) {
             uint8_t buffer[0x10000];
+            //auto start = std::chrono::high_resolution_clock::now();
             size_t read = static_cast<size_t>(usb_device->read_data(buffer, sizeof(buffer)));
+            //auto end = std::chrono::high_resolution_clock::now();
+            //printf("issues read at %f, took %f milliseconds\n",
+            //        std::chrono::duration_cast<std::chrono::nanoseconds>(start - tstart).count() / 1e6f,
+            //        std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count() / 1e6f);
             //printf("read count: %zx\n", read);
             size_t written = _this->read_buf.push(buffer, read);
             if (written != read)
