@@ -51,7 +51,10 @@ protected:
     };
     std::vector<image_buffer> image_buffers;
     std::mutex display_index_mutex;
+    std::unique_lock<std::mutex> display_index_lock;
+    std::condition_variable display_index_cv;
     size_t display_index, decoder_index;
+    size_t last_display_index;
 
     BiQuad leftHPFilter;
     BiQuad rightHPFilter;

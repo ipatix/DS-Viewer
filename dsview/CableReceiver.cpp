@@ -36,8 +36,10 @@ ICableReceiver::ICableReceiver(boost::lockfree::spsc_queue<stereo_sample>& audio
 DSCableReceiver::DSCableReceiver(boost::lockfree::spsc_queue<stereo_sample>& audio_buffer)
     : ICableReceiver(audio_buffer)
     , image_buffers(IMAGE_QUEUE_LEN)
+    , display_index_lock(display_index_mutex, std::defer_lock)
     , display_index(1)
     , decoder_index(0)
+    , last_display_index(0)
     , leftHPFilter(BQ_TYPE_HIGHPASS, 10.0f / float(AUDIO_SAMPLERATE), 0.707f, 0)
     , rightHPFilter(BQ_TYPE_HIGHPASS, 10.0f / float(AUDIO_SAMPLERATE), 0.707f, 0)
     , read_buf(0x200000)
@@ -64,15 +66,19 @@ DSCableReceiver::~DSCableReceiver()
 
 void DSCableReceiver::LockFrame(const void **top_screen, const void **bot_screen)
 {
-    display_index_mutex.lock();
+    display_index_lock.lock();
+    // remove this below to disable waiting for new frames
+    while (display_index == last_display_index) {
+        display_index_cv.wait(display_index_lock);
+    }
     *top_screen = image_buffers[display_index].top.getData();
     *bot_screen = image_buffers[display_index].bot.getData();
-    return;
+    last_display_index = display_index;
 }
 
 void DSCableReceiver::UnlockFrame()
 {
-    display_index_mutex.unlock();
+    display_index_lock.unlock();
 }
 
 void DSCableReceiver::decoderThread(DSCableReceiver *_this)
@@ -130,6 +136,7 @@ void DSCableReceiver::decoderThread(DSCableReceiver *_this)
                     _this->display_index += 1;
                     if (_this->display_index >= IMAGE_QUEUE_LEN)
                         _this->display_index = 0;
+                    _this->display_index_cv.notify_one();
                     _this->display_index_mutex.unlock();
                     top_color = static_cast<Color *>(_this->image_buffers[_this->decoder_index].top.getData());
                     bot_color = static_cast<Color *>(_this->image_buffers[_this->decoder_index].bot.getData());
