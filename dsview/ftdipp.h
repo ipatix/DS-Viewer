@@ -44,7 +44,7 @@ class ftdi_device {
         }
 
         void usb_purge_buffers() {
-            if (ftdi_usb_purge_buffers(con) != 0)
+            if (ftdi_tcioflush(con) != 0)
                 throw Xcept("ftdi_usb_purge_buffers: %s", ftdi_get_error_string(con));
         }
 
