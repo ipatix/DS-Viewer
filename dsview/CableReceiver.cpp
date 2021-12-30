@@ -2,6 +2,7 @@
 #include <cassert>
 #include <cstdio>
 #include <cstring>
+#include <memory>
 
 #ifdef _WIN32
 #define _USE_MATH_DEFINES
@@ -118,7 +119,7 @@ void DSCableReceiver::decoderThread(DSCableReceiver *_this)
                 // is just a fraction of a frame
                 _this->read_buf.pop();
                 static int bad_count = 0;
-                fprintf(stderr, "Bad frame detected: %d\n", bad_count++);
+                fprintf(stderr, "Bad frame detected (%d): %08x\n", bad_count++, mf.serialized);
                 break;
             }
             if (mf.IsVideo()) {
@@ -179,12 +180,17 @@ void DSCableReceiver::readerThread(DSCableReceiver *_this)
     printf("reader thread started\n");
     try {
 #ifdef __linux__
-        errno = 0;
-        nice(-20);
-        if (errno != 0)
-            printf("Warning, couldn't set nice to -20\n");
+        struct sched_param sp = {
+            .sched_priority = 30,
+        };
+        errno = pthread_setschedparam(pthread_self(), SCHED_FIFO, &sp);
+        if (errno != 0) {
+            perror("Warning, couldn't set reader priority");
+            printf("Excessive image tearing might occur!\n");
+        }
 #endif
-        ftdi_device* usb_device = new ftdi_device();
+        // Does this really have to be on heap?
+        std::unique_ptr<ftdi_device> usb_device = std::make_unique<ftdi_device>();
 #ifdef __unix__
         usb_device->usb_open(0x0403, 0x6014);
         usb_device->set_bitmode(0xFF, BITMODE_RESET);
@@ -218,12 +224,11 @@ void DSCableReceiver::readerThread(DSCableReceiver *_this)
             //printf("read count: %zx\n", read);
             size_t written = _this->read_buf.push(buffer, read);
             if (written != read)
-                printf("warning, buffer overflow\n");
+                printf("warning, buffer overrun\n");
             atomic_thread_fence(std::memory_order_acquire);
         }
 
         usb_device->usb_close();
-        delete usb_device;
     }
     catch (const std::exception& e) {
         fprintf(stderr, "Fatal Eror:\n%s", e.what());

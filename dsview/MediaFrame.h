@@ -38,6 +38,7 @@ struct MediaFrame
 	union
 	{
 		uint8_t flags;
+		uint32_t serialized;
 		MAudioFrame aframe;
 		MPixelFrame pframe;
 	};

@@ -34,7 +34,7 @@ int main(int argc, char **argv)
             auto currentTime = chrono::high_resolution_clock::now();
             chrono::nanoseconds frameTime = currentTime - lastTime;
             lastTime = currentTime;
-            running = mv.UpdateVideo(receiver, frameTime.count() / float(1000000000.0f));
+            running = mv.UpdateVideo(receiver, static_cast<float>(frameTime.count()) / 1000000000.0f);
 
             //printf("frame time: %f\n", frameTime.count() / float(1000000000.0f));
         }
